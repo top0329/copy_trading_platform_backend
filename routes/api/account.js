@@ -1,6 +1,7 @@
 const express = require('express');
 const registerAccount = require('../../controllers/registerAccount');
 const Account = require('../../models/Account');
+const getAccountInformation = require('../../controllers/getAccountInformation');
 
 const router = express();
 
@@ -27,6 +28,17 @@ router.get('/all-accounts', async (req, res) => {
   try {
     const allAccounts = await Account.find();
     res.json(allAccounts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+router.put('/update-account-information/:id', async (req, res) => {
+  try {
+    const accountData = await getAccountInformation(req.params.id);
+    const accont = await Account.findOne({ accountID: req.params.id });
+    res.json(accont);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
