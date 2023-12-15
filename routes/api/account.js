@@ -10,18 +10,22 @@ router.get('/', (req, res) => {
 });
 
 router.post('/register-account', async (req, res) => {
-  const { login, password, name, server, platform, copyFactoryRoles } =
-    req.body;
-  const data = await registerAccount(
-    login,
-    password,
-    name,
-    server,
-    copyFactoryRoles,
-    platform
-  );
-  const result = data;
-  res.json({ AccountRegister: result });
+  try {
+    const { login, password, name, server, platform, copyFactoryRoles } =
+      req.body;
+    const data = await registerAccount(
+      login,
+      password,
+      name,
+      server,
+      copyFactoryRoles,
+      platform
+    );
+    const result = data;
+    res.json({ AccountRegister: result });
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 router.get('/all-accounts', async (req, res) => {
@@ -37,8 +41,7 @@ router.get('/all-accounts', async (req, res) => {
 router.put('/update-account-information/:id', async (req, res) => {
   try {
     const accountData = await getAccountInformation(req.params.id);
-    const accont = await Account.findOne({ accountID: req.params.id });
-    res.json(accont);
+    res.json(accountData);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

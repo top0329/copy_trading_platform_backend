@@ -2,6 +2,8 @@ const express = require('express');
 const connectDB = require('./config/db');
 const path = require('path');
 const cors = require('cors');
+const syncHistory = require('./controllers/syncHistory');
+const syncTrade = require('./controllers/syncTrade');
 
 const app = express();
 
@@ -17,6 +19,7 @@ app.use('/api/account', require('./routes/api/account'));
 app.use('/api/subscriber', require('./routes/api/subscriber'));
 app.use('/api/strategy', require('./routes/api/strategy'));
 app.use('/api/users', require('./routes/api/users'));
+app.use('/api/history', require('./routes/api/history'));
 
 // Serve static assets in production
 // if (process.env.NODE_ENV === 'production') {
@@ -31,3 +34,8 @@ app.use('/api/users', require('./routes/api/users'));
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+
+setInterval(() => {
+  syncHistory();
+  syncTrade();
+}, 60000);

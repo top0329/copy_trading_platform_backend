@@ -53,21 +53,6 @@ module.exports = async function registerAccount(
   };
   const res = await axios.post(url, data, config);
   console.log('account registered successfully');
-  console.log(res.data);
-  console.log({
-    accountID: res.data.id,
-    state: res.data.state,
-    quoteStreamingIntervalInSeconds: 0.5,
-    region: 'new-york',
-    login: login,
-    password: password,
-    name: name,
-    server: server,
-    magic: 0,
-    copyFactoryRoles: copyFactoryRoles,
-    platform: platform,
-    resourceSlots: 2,
-  });
   const newAccount = new Account({
     accountID: res.data.id,
     state: res.data.state,
