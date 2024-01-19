@@ -5,7 +5,7 @@ const Roles = require('../config/role');
 
 const UserSchema = new Schema(
   {
-    fullname: {
+    fullName: {
       type: String,
       required: true,
       trim: true,
@@ -34,6 +34,10 @@ const UserSchema = new Schema(
       type: String,
       enum: Object.keys(Roles),
       default: Roles.User,
+    },
+    avatar: {
+      type: String,
+      default: 'default.png',
     },
   },
   { timestamps: true }

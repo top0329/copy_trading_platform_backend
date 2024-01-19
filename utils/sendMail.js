@@ -14,11 +14,11 @@ const sendMail = async (to, content) => {
   try {
     const res = await transporter.sendMail({
       from: process.env.EMAIL_USERNAME,
-      to,
+      to: to,
       subject: 'Hello',
       html: content,
     });
-    console.log(res);
+    //console.log(res);
   } catch (error) {
     console.log(error);
   }

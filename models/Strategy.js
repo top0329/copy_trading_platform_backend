@@ -15,11 +15,17 @@ const StrategySchema = new Schema(
     },
     description: {
       type: String,
-      // required: true,
     },
     accountId: {
       type: String,
-      required: true,
+      ref: 'account',
+      // required: true,
+    },
+    strategyLink: {
+      type: String,
+    },
+    live: {
+      type: Boolean,
     },
   },
   { timestamps: true }

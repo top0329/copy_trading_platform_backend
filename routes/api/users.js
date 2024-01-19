@@ -7,20 +7,24 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const { check, validationResult } = require('express-validator');
 const normalize = require('normalize-url');
+const fs = require('fs');
 
 const User = require('../../models/User');
 const auth = require('../../middleware/auth');
 const Role = require('../../config/role');
 const sendMail = require('../../utils/sendMail');
 
-// @route    POST api/users
-// @desc     Register user
+// @route    GET api/users
+// @desc     Get all users
 // @access   Public
 router.get('/all', auth([Role.User, Role.Admin]), async (req, res) => {
-  const users = User.find({});
-  res.json(users);
-  // console.log(users);
-  // console.log('/all hi');
+  try{
+    const users = User.find({});
+    return res.json(users);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
 });
 
 // @route    POST api/users
@@ -29,7 +33,7 @@ router.get('/all', auth([Role.User, Role.Admin]), async (req, res) => {
 router.post(
   '/register',
   [
-    check('fullname', 'Name is required').notEmpty(),
+    check('fullName', 'Name is required').notEmpty(),
     check('email', 'Please include a valid email').isEmail(),
     check(
       'password',
@@ -41,7 +45,7 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const { fullname, email, password } = req.body;
+    const { fullName, email, password } = req.body;
     try {
       let user = await User.findOne({ email });
 
@@ -59,7 +63,7 @@ router.post(
         { forceHttps: true }
       );
       user = new User({
-        fullname,
+        fullName,
         email,
         avatar,
         password,
@@ -70,7 +74,7 @@ router.post(
       user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
       const result = await user.save();
       console.log(result);
-      const baseUrl = `${request.server.info.protocol}://${request.info.host}`;
+      const baseUrl = `http://45.8.22.219:5173`;
       console.log(baseUrl);
       const content = `
         <div style="text-align: center">
@@ -80,32 +84,31 @@ router.post(
         <pre style="font-size: 16px">
         We are excited to have you at Marinex🚢. We need your confirmation that
         you will be using this email to access the platform
-      </pre
-        >
-        <p>Verify the email by clicking the button below:</p>
-        <a
-          style="
-            background-color: rgb(28, 108, 253);
-            padding: 10px 20px;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            text-decoration: none;
-          "
-          href="${baseUrl}/api/users/verify-email/${result.emailVerifyToken}"
-        >
-          Verify Your Email Address
-        </a>
-      </div>
-    </div>`;
+        </pre>
+          <p>Verify the email by clicking the button below:</p>
+          <a
+            style="
+              background-color: rgb(28, 108, 253);
+              padding: 10px 20px;
+              color: white;
+              border: none;
+              border-radius: 10px;
+              text-decoration: none;
+            "
+            href="${baseUrl}/auth/verify-email/${result.emailVerifyToken}"
+          >
+            Verify Your Email Address
+          </a>
+        </div>
+      </div>`;
       sendMail(result.email, content);
-      res.status(201).json({
+      return res.status(201).json({
         msg: 'User created successfully',
         user: user,
       });
     } catch (err) {
       console.error(err.message);
-      res.status(500).send('Server error');
+      return res.status(500).send('Server error');
     }
   }
 );
@@ -134,6 +137,238 @@ router.post(
       if (!isMatch) {
         return res.status(400).json({ errors: [{ msg: 'Invalid Password' }] });
       }
+      if (user.emailVerified) {
+        const payload = {
+          user: {
+            id: user.id,
+          },
+        };
+        jwt.sign(
+          payload,
+          config.get('jwtSecret'),
+          { expiresIn: '1d' },
+          (err, token) => {
+            if (err) throw err;
+            return res.json({ token: token, user: user });
+          }
+        );
+      } else {
+        user.emailVerifyToken = crypto.randomBytes(30).toString("hex");
+        user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
+        await user.save();
+
+        const baseUrl = `http://45.8.22.219:5173`;
+        const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
+        console.log("email send -->");
+        sendMail(user.email, content);
+        return res.send({
+          msg: "Email verification has sent to your email",
+        });
+      }
+    } catch (err) {
+      console.error(err.message);
+      return res.status(500).send('Server error');
+    }
+  }
+);
+
+// @route    GET api/users/verify-email/:token
+// @desc     Authenticate user & get token
+// @access   Public
+
+router.get('/verify-email/:token', async (req, res) => {
+  try{
+    const user = await User.findOne({
+      emailVerifyToken: req.params.token,
+    });
+    console.log(req.params.token);
+    console.log(user.emailVerifyToken);
+    if (user) {
+      if (user.emailVerifyExpire > Date.now()) {
+        user.emailVerified = true;
+        await user.save();
+        return res.send({ emailVerified: true });
+      }
+    }
+    return res.send({ emailVerified: false });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    GET api/users/verify-email-update/:token
+// @desc     Authenticate user & get token
+// @access   Public
+
+router.get('/verify-email-update/:token', async (req, res) => {
+  try{
+    const user = await User.findOne({
+      emailVerifyToken: req.params.token,
+    });
+    console.log(req.params.token);
+    console.log(user.emailVerifyToken);
+    if (user) {
+      if (user.emailVerifyExpire > Date.now()) {
+        user.emailVerified = true;
+        await user.save();
+        return res.send({ emailVerified: true });
+      }
+    }
+    return res.send({ emailVerified: false });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    POST api/users/re-send/email-verification
+// @desc     Resend verification code
+// @access   Private
+
+router.post('/re-send/email-verification', async (req, res) => {
+  try{
+    const { email } = req.body;
+    let user = await User.findOne({ email: email });
+    if (user) {
+      user.emailVerifyToken = crypto.randomBytes(30).toString("hex");
+      user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
+      await user.save();
+      const baseUrl = `http://45.8.22.219:5173`;
+      const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
+      sendMail(user.email, content);
+      return res.json({
+        msg: "Email verification has sent to your email",
+      });
+    }
+    return res
+        .status(404)
+        .json({ errors: [{ msg: 'User not found' }] });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    GET api/users/reset-password
+// @desc     Reset password
+// @access   Public
+
+router.get('/reset-password/:email', async (req, res) => {
+  try{
+    const { email } = req.params;
+    const token = jwt.sign({ email: email }, config.get('jwtSecret'), { expiresIn: '3m' });
+    const baseUrl = `http://45.8.22.219:5173`;
+    const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your reset-password verification link. Please click the button below to reset your password:</p><a href="${baseUrl}/reset-password/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Reset Password</a></div>`;
+    console.log(`send reset-password link to ${email}`);
+    sendMail(email, content);
+    return res.json({
+      msg: "Reset password link has sent to your email",
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    POST api/users/reset-password
+// @desc     Reset password
+// @access   Private
+
+router.post('/reset-password', async (req, res) => {
+  try{
+    const { password, token } = req.body;
+    const decoded = jwt.decode(token.token);
+    if (decoded === null) {
+      return res.status(400).json({ msg: "Reset password failed" });
+    }
+    const currentTime = Date.now() / 1000;
+    if (decoded.exp < currentTime) {
+      return res.status(400).json({ msg: "Reset password failed" });
+    }
+    const user = await User.findOne({ email: decoded.email });
+
+    if (user) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+      try {
+        await user.save();
+        return res.json({ msg: "Reset password successfully" });
+      } catch (error) {
+        return res.status(400).json({ msg: "Reset password failed" });
+      }
+    }
+    return res.status(404).json({ msg: "No user found with that email" });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    GET api/users/me
+// @desc     Get user data
+// @access   Public
+
+router.get('/me', auth([Role.User, Role.Admin]), async (req, res) => {
+  const user = await User.findOne({ _id: req.user.id });
+
+  if (!user) {
+    res.status(405).json({ msg: 'No user' });
+  } else {
+    res.json(user);
+  }
+});
+
+// @route    PUT api/users/me
+// @desc     Update user data
+// @access   Private
+
+router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
+  try {
+    const oldUser = await User.findOne({ _id: req.user.id });
+    if (oldUser.email === req.body.email) {
+      oldUser.fullName = req.body.fullName;
+      const user = await oldUser.save();
+      return res.json(user)
+    } else {
+      oldUser.fullName = req.body.fullName;
+      oldUser.email = req.body.email;
+      oldUser.emailVerified = false;
+      oldUser.emailVerifyToken = crypto.randomBytes(30).toString("hex");
+      oldUser.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
+      const baseUrl = `http://45.8.22.219:5173`;
+      const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/email-verify-update/${oldUser.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
+      sendMail(oldUser.email, content);
+      console.log(oldUser.email);
+      const user = await oldUser.save();
+      console.log(user)
+      return res.send({
+        msg: "Email verification has sent to your email",
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    GET api/users/me
+// @desc     Get user data
+// @access   Public
+
+router.put('/update-password', auth([Role.User, Role.Admin]), async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const { password } = req.user;
+    const isMatch = await bcrypt.compare(oldPassword, password);
+    console.log(req.user)
+    if ( isMatch ) {
+      const salt = await bcrypt.genSalt(10);
+      const password = await bcrypt.hash(newPassword, salt);
+      const user = await User.findOneAndUpdate(
+        { _id: req.user.id },
+        { password: password }
+      );
       const payload = {
         user: {
           id: user.id,
@@ -145,35 +380,17 @@ router.post(
         { expiresIn: '1d' },
         (err, token) => {
           if (err) throw err;
-          res.json({ token });
+          return res.json({ token: token, user: user });
         }
       );
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('Server error');
+      return res.json({ msg: "Password updated successfully!" });
+    } else {
+      return res.status(400).json({ msg: "Invalid old password!" });
     }
+  } catch (err) {
+      console.log(err);
+      return res.status(500).send('Server error');
   }
-);
-
-// @route    GET api/users/verify-email/{token}
-// @desc     Authenticate user & get token
-// @access   Public
-
-router.get('/verify-email/{token}', async (req, res) => {
-  const user = await User.findOne({
-    emailVerifyToken: request.params.token,
-  });
-  if (user) {
-    if (user.emailVerifyExpire > Date.now()) {
-      console.log('verify email-->', user._id);
-      user.emailVerified = true;
-      await user.save();
-      // return success.toLocaleString();a
-      return res.send({ msg: 'success' });
-    }
-  }
-  return res.send({ mgs: 'failed' });
-  // return failed.toLocaleString();
 });
 
 module.exports = router;

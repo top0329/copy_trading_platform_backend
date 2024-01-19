@@ -1,5 +1,6 @@
 const axios = require("axios");
 const dotenv = require("dotenv");
+const Subscriber = require("../models/Subscriber");
 
 dotenv.config();
 
@@ -12,6 +13,10 @@ module.exports = async function getSubscriberList() {
       headers: { "auth-token": token },
     }
   );
+
+  res.data.forEach(async (subscriber) => {
+    await Subscriber.findOneAndUpdate({subscriberId:subscriber._id}, {})
+  });
 
   return res;
 }

@@ -8,7 +8,7 @@ const Schema = mongoose.Schema;
 
 const HistorySchema = new Schema(
   {
-    accountID: {
+    accountId: {
       // type: Schema.Types.ObjectId,
       type: String,
       ref: 'account',
@@ -17,58 +17,59 @@ const HistorySchema = new Schema(
       type: String,
       required: true,
     },
-    type: {
-      type: String,
-      enum: Object.keys(DealType),
-      required: true,
-    },
-    time: {
-      type: Date,
-      required: true,
-    },
-    commission: {
-      type: Number,
-      required: true,
-    },
-    swap: {
-      type: Number,
-    },
-    profit: {
-      type: Number,
-    },
-    symbol: {
-      type: String,
-    },
-    orderId: {
-      type: String,
-    },
     positionId: {
       type: String,
     },
     volume: {
       type: Number,
     },
-    price: {
+    durationInMinutes: {
       type: Number,
     },
-    entryType: {
-      type: String,
-      enum: Object.keys(DealEntryType),
-    },
-    reason: {
-      type: String,
-      enum: Object.keys(DealReason),
-    },
-    stopLoss: {
+    profit: {
       type: Number,
     },
-    takeProfit: {
+    gain: {
+      type: Number,
+    },
+    success: {
+      type: String,
+    },
+    openTime: {
+      type: Date,
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: Object.keys(DealType),
+      required: true,
+    },
+    symbol: {
+      type: String,
+    },
+    closeTime: {
+      type: Date,
+      required: true,
+    },
+    openPrice: {
+      type: Number,
+    },
+    closePrice: {
+      type: Number,
+    },
+    pips: {
+      type: Number,
+    },
+    riskInBalancePercent: {
+      type: Number,
+    },
+    riskInPips: {
       type: Number,
     },
     comment: {
       type: String,
     },
-    magic: {
+    marketValue: {
       type: Number,
     },
   },

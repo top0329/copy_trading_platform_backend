@@ -5,12 +5,13 @@ const OrderStateType = require('../config/orderStateType');
 const OrderReasonType = require('../config/orderReasonType');
 const OrderFillingModeType = require('../config/orderFillingModeType');
 const OrderExpirationType = require('../config/orderExpirationType');
+const PositionType = require('../config/positionType');
 
 const Schema = mongoose.Schema;
 
 const TradeSchema = new Schema(
   {
-    accountID: {
+    accountId: {
       // type: Schema.Types.ObjectId,
       type: String,
       ref: 'account',
@@ -19,56 +20,61 @@ const TradeSchema = new Schema(
       type: String,
       required: true,
     },
-    type: {
+    positionId: {
       type: String,
-      enum: Object.keys(OrderType),
+    },
+    volume: {
+      type: Number,
       required: true,
     },
-    state: {
+    success: {
       type: String,
-      enum: Object.keys(OrderStateType),
+      required: true,
+    },
+    profit: {
+      type: Number,
+      required: true,
+    },
+    openTime: {
+      type: Date,
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: Object.keys(PositionType),
       required: true,
     },
     symbol: {
       type: String,
-    },
-    time: {
-      type: Date,
       required: true,
     },
     openPrice: {
       type: Number,
       required: true,
     },
-    volume: {
+    gain: {
+      type: Number,
+      required: true,
+    },
+    durationInMinutes: {
+      type: Number,
+      required: true,
+    },
+    pips: {
       type: Number,
     },
-    currentVolume: {
+    marketValue: {
+      type: Number,
+      required: true,
+    },
+    riskInBalancePercent: {
       type: Number,
     },
-    positionId: {
-      type: String,
-    },
-    doneTime: {
-      type: Date,
-    },
-    reason: {
-      type: String,
-      enum: Object.keys(OrderReasonType),
-    },
-    fillingMode: {
-      type: String,
-      enum: Object.keys(OrderFillingModeType),
-    },
-    entryType: {
-      type: String,
-      enum: Object.keys(OrderExpirationType),
+    riskInPips: {
+      type: Number,
     },
     comment: {
       type: String,
-    },
-    magic: {
-      type: Number,
     },
   },
   { timestamps: true }

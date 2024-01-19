@@ -4,10 +4,14 @@ const Schema = mongoose.Schema;
 
 const AccountSchema = new Schema(
   {
-    accountID: {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+    },
+    accountId: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
     },
     login: {
       type: String,
@@ -88,6 +92,19 @@ const AccountSchema = new Schema(
     accountCurrencyExchangeRate: {
       type: Number,
     },
+    metastatsApiEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    riskManagementApiEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    symbols: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );

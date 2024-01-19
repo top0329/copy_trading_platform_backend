@@ -1,21 +1,20 @@
 const express = require('express');
-const History = require('../../models/History');
+const Trade = require('../../models/Trade');
+const Account = require('../../models/Account');
 const auth = require('../../middleware/auth');
 const Role = require('../../config/role');
-const Account = require('../../models/Account');
 
 const router = express();
 
-router.get('/', async (req, res) => {
+router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
   const { page, pagecount, sort, type } = req.query;
-
+  console.log(
+    'trade 1 file=>>>>>>>>>>>>>>>>>>>>',
+    page ? pagecount * (page - 1) : 0
+  );
   try {
-    console.log(
-      'history 1 file=>>>>>>>>>>>>>>>>>>>>',
-      page ? pagecount * (page - 1) : 0
-    );
-    const count = await History.count();
-    const data = await History.aggregate([
+    const count = await Trade.count();
+    const data = await Trade.aggregate([
       {
         $lookup: {
           from: Account.collection.name,
@@ -34,9 +33,6 @@ router.get('/', async (req, res) => {
           profit: 1,
           success: 1,
           openTime: 1,
-          closeTime: 1,
-          openPrice: 1,
-          closePrice: 1,
           symbol: 1,
           gain: 1,
           openPrice: 1,
@@ -62,12 +58,12 @@ router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
   const { id } = req.params;
   const { page, pagecount, sort, type } = req.query;
   console.log(
-    'history 2 file=>>>>>>>>>>>>>>>>>>>>',
+    'trade 2 file=>>>>>>>>>>>>>>>>>>>>',
     page ? pagecount * (page - 1) : 0
   );
   try {
-    const count = await History.find({ accountId: id }).count();
-    const data = await History.aggregate([
+    const count = await Trade.find({ accountId: id }).count();
+    const data = await Trade.aggregate([
       { $match: { accountId: id } },
       {
         $lookup: {
@@ -87,9 +83,6 @@ router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
           profit: 1,
           success: 1,
           openTime: 1,
-          closeTime: 1,
-          openPrice: 1,
-          closePrice: 1,
           symbol: 1,
           gain: 1,
           openPrice: 1,
@@ -98,6 +91,7 @@ router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
           positionId: 1,
           riskInBalancePercent: 1,
           riskInPips: 1,
+          accountId: 1,
         },
       },
       // {$sort: ...},
@@ -106,17 +100,6 @@ router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
     ]);
 
     res.json({ data, count });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.get('/all/:id', auth([Role.User, Role.Admin]), async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const data = await History.find({ accountId: id });
-    res.json(data);
   } catch (err) {
     console.log(err);
   }

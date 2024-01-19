@@ -12,10 +12,7 @@ module.exports = async function registerStrategy(
   strategyDescription
 ) {
   const newStrategyID = await generateNewID();
-  // const newStrategyID = dZFw;
   const newStrategyIDstring = newStrategyID.data.id;
-  // const newStrategyIDstring = "dZFw";
-  console.log('newStrategyID====>', newStrategyIDstring);
   let url = `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/strategies/${newStrategyIDstring}`;
   let data = JSON.stringify({
     name: StrategyName,
