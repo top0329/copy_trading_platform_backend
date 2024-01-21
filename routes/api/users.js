@@ -17,17 +17,41 @@ const Strategy = require('../../models/Strategy');
 const Account = require('../../models/Account');
 const Subscriber = require('../../models/Subscriber');
 
-// @route    GET api/users/:id
-// @desc     Delete user data
-// @access   admin
-
-router.delete('/:id', auth([Role.Admin]), async (req, res) => {
+/**
+ * @route   GET api/users/detail/:id
+ * @desc    Get user info from id
+ * @access  Admin
+ */
+router.get('/detail/:id', auth([Role.Admin]), async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ status: "OK" });
-  } catch ( err ) {
+    const user = await User.findOne({ _id: req.params.id });
+    if (user) {
+      res.json({ status: 'OK', data: user });
+    } else {
+      res.json({ status: "EX", data: 'No user' })
+    }
+  } catch (err) {
     console.log(err)
-    res.json( { status: "ERR" } )
+    res.json({ status: "ERR" })
+  }
+});
+
+/**
+ * @route   PUT api/users/max-account/:id
+ * @desc    Update user info from id
+ * @access  Admin
+ */
+router.put('/max-account/:id', auth([Role.Admin]), async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { maxAccount: req.body.maxAccount });
+    if (user) {
+      res.json({ status: 'OK' });
+    } else {
+      res.json({ status: "EX", data: 'No user' })
+    }
+  } catch (err) {
+    console.log(err)
+    res.json({ status: "ERR" })
   }
 });
 
@@ -171,6 +195,7 @@ router.get('/reset-password/:email', async (req, res) => {
     return res.status(500).send('Server error');
   }
 });
+
 
 // @route    POST api/users
 // @desc     Register user
@@ -454,5 +479,19 @@ router.put(
     }
   }
 );
+
+// @route    GET api/users/:id
+// @desc     Delete user data
+// @access   admin
+
+router.delete('/:id', auth([Role.Admin]), async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ status: "OK" });
+  } catch (err) {
+    console.log(err)
+    res.json({ status: "ERR" })
+  }
+});
 
 module.exports = router;
