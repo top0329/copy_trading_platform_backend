@@ -17,6 +17,20 @@ const Strategy = require('../../models/Strategy');
 const Account = require('../../models/Account');
 const Subscriber = require('../../models/Subscriber');
 
+// @route    GET api/users/:id
+// @desc     Delete user data
+// @access   admin
+
+router.delete('/:id', auth([Role.Admin]), async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ status: "OK" });
+  } catch ( err ) {
+    console.log(err)
+    res.json( { status: "ERR" } )
+  }
+});
+
 // @route    GET api/users
 // @desc     Get all users
 // @access   Public
@@ -82,6 +96,8 @@ router.get('/me', auth([Role.User, Role.Admin]), async (req, res) => {
     res.json(user);
   }
 });
+
+
 
 // @route    GET api/users/verify-email/:token
 // @desc     Authenticate user & get token
