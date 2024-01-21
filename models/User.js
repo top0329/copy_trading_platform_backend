@@ -39,6 +39,10 @@ const UserSchema = new Schema(
       type: String,
       default: 'default.png',
     },
+    maxAccount: {
+      type: Number,
+      default: 10,
+    },
   },
   { timestamps: true }
 );

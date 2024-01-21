@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
+router.get('/:id', async (req, res) => {
   const { id } = req.params;
   const { page, pagecount, sort, type } = req.query;
   console.log(
@@ -111,7 +111,19 @@ router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
   }
 });
 
-router.get('/all/:id', auth([Role.User, Role.Admin]), async (req, res) => {
+router.get('/all/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const data = await History.find({ accountId: id });
+    res.json(data);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//for view user
+router.get('/all/view/:id', async (req, res) => {
   const { id } = req.params;
 
   try {

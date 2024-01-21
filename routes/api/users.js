@@ -13,14 +13,143 @@ const User = require('../../models/User');
 const auth = require('../../middleware/auth');
 const Role = require('../../config/role');
 const sendMail = require('../../utils/sendMail');
+const Strategy = require('../../models/Strategy');
+const Account = require('../../models/Account');
+const Subscriber = require('../../models/Subscriber');
 
 // @route    GET api/users
 // @desc     Get all users
 // @access   Public
 router.get('/all', auth([Role.User, Role.Admin]), async (req, res) => {
-  try{
-    const users = User.find({});
-    return res.json(users);
+  try {
+    const { page, pagecount, sort, type } = req.query;
+    console.log(page, pagecount, sort, type);
+    const count = await User.count();
+    const users = await User.aggregate([
+      {
+        $lookup: {
+          from: Account.collection.name,
+          localField: '_id',
+          foreignField: 'user',
+          as: 'accounts',
+        },
+      },
+      {
+        $lookup: {
+          from: Strategy.collection.name,
+          localField: 'accounts.accountId',
+          foreignField: 'accountId',
+          as: 'strategies',
+        },
+      },
+      {
+        $lookup: {
+          from: Subscriber.collection.name,
+          localField: 'accounts.accountId',
+          foreignField: 'subscriberId',
+          as: 'subscribers',
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          email: 1,
+          fullName: 1,
+          maxAccount: 1,
+          accounts: { $size: '$accounts' },
+          strategies: { $size: '$strategies' },
+          subscribers: { $size: '$subscribers' },
+        },
+      },
+    ]);
+    return res.json({ data: users, count });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    GET api/users/me
+// @desc     Get user data
+// @access   Public
+
+router.get('/me', auth([Role.User, Role.Admin]), async (req, res) => {
+  const user = await User.findOne({ _id: req.user.id });
+
+  if (!user) {
+    res.status(405).json({ msg: 'No user' });
+  } else {
+    res.json(user);
+  }
+});
+
+// @route    GET api/users/verify-email/:token
+// @desc     Authenticate user & get token
+// @access   Public
+
+router.get('/verify-email/:token', async (req, res) => {
+  try {
+    const user = await User.findOne({
+      emailVerifyToken: req.params.token,
+    });
+    console.log(req.params.token);
+    console.log(user.emailVerifyToken);
+    if (user) {
+      if (user.emailVerifyExpire > Date.now()) {
+        user.emailVerified = true;
+        await user.save();
+        return res.send({ emailVerified: true });
+      }
+    }
+    return res.send({ emailVerified: false });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    GET api/users/verify-email-update/:token
+// @desc     Authenticate user & get token
+// @access   Public
+
+router.get('/verify-email-update/:token', async (req, res) => {
+  try {
+    const user = await User.findOne({
+      emailVerifyToken: req.params.token,
+    });
+    console.log(req.params.token);
+    console.log(user.emailVerifyToken);
+    if (user) {
+      if (user.emailVerifyExpire > Date.now()) {
+        user.emailVerified = true;
+        await user.save();
+        return res.send({ emailVerified: true });
+      }
+    }
+    return res.send({ emailVerified: false });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Server error');
+  }
+});
+
+// @route    GET api/users/reset-password
+// @desc     Reset password
+// @access   Public
+
+router.get('/reset-password/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const token = jwt.sign({ email: email }, config.get('jwtSecret'), {
+      expiresIn: '3m',
+    });
+    const baseUrl = `http://45.8.22.219:5173`;
+    const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your reset-password verification link. Please click the button below to reset your password:</p><a href="${baseUrl}/reset-password/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Reset Password</a></div>`;
+    console.log(`send reset-password link to ${email}`);
+    sendMail(email, content);
+    return res.json({
+      msg: 'Reset password link has sent to your email',
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).send('Server error');
@@ -153,16 +282,16 @@ router.post(
           }
         );
       } else {
-        user.emailVerifyToken = crypto.randomBytes(30).toString("hex");
+        user.emailVerifyToken = crypto.randomBytes(30).toString('hex');
         user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
         await user.save();
 
         const baseUrl = `http://45.8.22.219:5173`;
         const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
-        console.log("email send -->");
+        console.log('email send -->');
         sendMail(user.email, content);
         return res.send({
-          msg: "Email verification has sent to your email",
+          msg: 'Email verification has sent to your email',
         });
       }
     } catch (err) {
@@ -172,99 +301,26 @@ router.post(
   }
 );
 
-// @route    GET api/users/verify-email/:token
-// @desc     Authenticate user & get token
-// @access   Public
-
-router.get('/verify-email/:token', async (req, res) => {
-  try{
-    const user = await User.findOne({
-      emailVerifyToken: req.params.token,
-    });
-    console.log(req.params.token);
-    console.log(user.emailVerifyToken);
-    if (user) {
-      if (user.emailVerifyExpire > Date.now()) {
-        user.emailVerified = true;
-        await user.save();
-        return res.send({ emailVerified: true });
-      }
-    }
-    return res.send({ emailVerified: false });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).send('Server error');
-  }
-});
-
-// @route    GET api/users/verify-email-update/:token
-// @desc     Authenticate user & get token
-// @access   Public
-
-router.get('/verify-email-update/:token', async (req, res) => {
-  try{
-    const user = await User.findOne({
-      emailVerifyToken: req.params.token,
-    });
-    console.log(req.params.token);
-    console.log(user.emailVerifyToken);
-    if (user) {
-      if (user.emailVerifyExpire > Date.now()) {
-        user.emailVerified = true;
-        await user.save();
-        return res.send({ emailVerified: true });
-      }
-    }
-    return res.send({ emailVerified: false });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).send('Server error');
-  }
-});
-
 // @route    POST api/users/re-send/email-verification
 // @desc     Resend verification code
 // @access   Private
 
 router.post('/re-send/email-verification', async (req, res) => {
-  try{
+  try {
     const { email } = req.body;
     let user = await User.findOne({ email: email });
     if (user) {
-      user.emailVerifyToken = crypto.randomBytes(30).toString("hex");
+      user.emailVerifyToken = crypto.randomBytes(30).toString('hex');
       user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
       await user.save();
       const baseUrl = `http://45.8.22.219:5173`;
       const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
       sendMail(user.email, content);
       return res.json({
-        msg: "Email verification has sent to your email",
+        msg: 'Email verification has sent to your email',
       });
     }
-    return res
-        .status(404)
-        .json({ errors: [{ msg: 'User not found' }] });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).send('Server error');
-  }
-});
-
-// @route    GET api/users/reset-password
-// @desc     Reset password
-// @access   Public
-
-router.get('/reset-password/:email', async (req, res) => {
-  try{
-    const { email } = req.params;
-    const token = jwt.sign({ email: email }, config.get('jwtSecret'), { expiresIn: '3m' });
-    const baseUrl = `http://45.8.22.219:5173`;
-    const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your reset-password verification link. Please click the button below to reset your password:</p><a href="${baseUrl}/reset-password/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Reset Password</a></div>`;
-    console.log(`send reset-password link to ${email}`);
-    sendMail(email, content);
-    return res.json({
-      msg: "Reset password link has sent to your email",
-    });
+    return res.status(404).json({ errors: [{ msg: 'User not found' }] });
   } catch (err) {
     console.log(err);
     return res.status(500).send('Server error');
@@ -276,15 +332,15 @@ router.get('/reset-password/:email', async (req, res) => {
 // @access   Private
 
 router.post('/reset-password', async (req, res) => {
-  try{
+  try {
     const { password, token } = req.body;
     const decoded = jwt.decode(token.token);
     if (decoded === null) {
-      return res.status(400).json({ msg: "Reset password failed" });
+      return res.status(400).json({ msg: 'Reset password failed' });
     }
     const currentTime = Date.now() / 1000;
     if (decoded.exp < currentTime) {
-      return res.status(400).json({ msg: "Reset password failed" });
+      return res.status(400).json({ msg: 'Reset password failed' });
     }
     const user = await User.findOne({ email: decoded.email });
 
@@ -293,29 +349,15 @@ router.post('/reset-password', async (req, res) => {
       user.password = await bcrypt.hash(password, salt);
       try {
         await user.save();
-        return res.json({ msg: "Reset password successfully" });
+        return res.json({ msg: 'Reset password successfully' });
       } catch (error) {
-        return res.status(400).json({ msg: "Reset password failed" });
+        return res.status(400).json({ msg: 'Reset password failed' });
       }
     }
-    return res.status(404).json({ msg: "No user found with that email" });
+    return res.status(404).json({ msg: 'No user found with that email' });
   } catch (err) {
     console.log(err);
     return res.status(500).send('Server error');
-  }
-});
-
-// @route    GET api/users/me
-// @desc     Get user data
-// @access   Public
-
-router.get('/me', auth([Role.User, Role.Admin]), async (req, res) => {
-  const user = await User.findOne({ _id: req.user.id });
-
-  if (!user) {
-    res.status(405).json({ msg: 'No user' });
-  } else {
-    res.json(user);
   }
 });
 
@@ -329,21 +371,21 @@ router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
     if (oldUser.email === req.body.email) {
       oldUser.fullName = req.body.fullName;
       const user = await oldUser.save();
-      return res.json(user)
+      return res.json(user);
     } else {
       oldUser.fullName = req.body.fullName;
       oldUser.email = req.body.email;
       oldUser.emailVerified = false;
-      oldUser.emailVerifyToken = crypto.randomBytes(30).toString("hex");
+      oldUser.emailVerifyToken = crypto.randomBytes(30).toString('hex');
       oldUser.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
       const baseUrl = `http://45.8.22.219:5173`;
       const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/email-verify-update/${oldUser.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
       sendMail(oldUser.email, content);
       console.log(oldUser.email);
       const user = await oldUser.save();
-      console.log(user)
+      console.log(user);
       return res.send({
-        msg: "Email verification has sent to your email",
+        msg: 'Email verification has sent to your email',
       });
     }
   } catch (err) {
@@ -356,41 +398,45 @@ router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
 // @desc     Get user data
 // @access   Public
 
-router.put('/update-password', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const { oldPassword, newPassword } = req.body;
-    const { password } = req.user;
-    const isMatch = await bcrypt.compare(oldPassword, password);
-    console.log(req.user)
-    if ( isMatch ) {
-      const salt = await bcrypt.genSalt(10);
-      const password = await bcrypt.hash(newPassword, salt);
-      const user = await User.findOneAndUpdate(
-        { _id: req.user.id },
-        { password: password }
-      );
-      const payload = {
-        user: {
-          id: user.id,
-        },
-      };
-      jwt.sign(
-        payload,
-        config.get('jwtSecret'),
-        { expiresIn: '1d' },
-        (err, token) => {
-          if (err) throw err;
-          return res.json({ token: token, user: user });
-        }
-      );
-      return res.json({ msg: "Password updated successfully!" });
-    } else {
-      return res.status(400).json({ msg: "Invalid old password!" });
-    }
-  } catch (err) {
+router.put(
+  '/update-password',
+  auth([Role.User, Role.Admin]),
+  async (req, res) => {
+    try {
+      const { oldPassword, newPassword } = req.body;
+      const { password } = req.user;
+      const isMatch = await bcrypt.compare(oldPassword, password);
+      console.log(req.user);
+      if (isMatch) {
+        const salt = await bcrypt.genSalt(10);
+        const password = await bcrypt.hash(newPassword, salt);
+        const user = await User.findOneAndUpdate(
+          { _id: req.user.id },
+          { password: password }
+        );
+        const payload = {
+          user: {
+            id: user.id,
+          },
+        };
+        jwt.sign(
+          payload,
+          config.get('jwtSecret'),
+          { expiresIn: '1d' },
+          (err, token) => {
+            if (err) throw err;
+            return res.json({ token: token, user: user });
+          }
+        );
+        return res.json({ msg: 'Password updated successfully!' });
+      } else {
+        return res.status(400).json({ msg: 'Invalid old password!' });
+      }
+    } catch (err) {
       console.log(err);
       return res.status(500).send('Server error');
+    }
   }
-});
+);
 
 module.exports = router;

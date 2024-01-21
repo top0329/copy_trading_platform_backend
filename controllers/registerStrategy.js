@@ -1,5 +1,7 @@
 const axios = require('axios');
 const dotenv = require('dotenv');
+const bcrypt = require('bcryptjs');
+
 const Strategy = require('../models/Strategy');
 
 dotenv.config();
@@ -13,6 +15,8 @@ module.exports = async function registerStrategy(
 ) {
   const newStrategyID = await generateNewID();
   const newStrategyIDstring = newStrategyID.data.id;
+  const salt = await bcrypt.genSalt(10);
+  const randomLink = await bcrypt.hash(newStrategyIDstring, salt);
   let url = `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/strategies/${newStrategyIDstring}`;
   let data = JSON.stringify({
     name: StrategyName,
@@ -22,7 +26,7 @@ module.exports = async function registerStrategy(
   let config = {
     headers: { 'auth-token': token, 'Content-Type': 'application/json' },
   };
-  const response = await axios
+  await axios
     .put(url, data, config)
     .then(async (res) => {
       const newStrategy = new Strategy({
@@ -30,6 +34,7 @@ module.exports = async function registerStrategy(
         name: StrategyName,
         description: strategyDescription,
         accountId: providerID,
+        strategyLink: randomLink,
       });
       await newStrategy.save();
     })

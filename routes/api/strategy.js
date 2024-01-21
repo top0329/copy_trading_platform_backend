@@ -45,6 +45,7 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
           strategyId: 1,
           accountId: 1,
           name: 1,
+          live: 1,
           description: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -69,8 +70,12 @@ router.get('/strategies-subscribers/:id', async (req, res) => {
     'strategy 2 file=>>>>>>>>>>>>>>>>>>>>',
     page ? pagecount * (page - 1) : 0
   );
+
+  console.log(id);
   try {
     const count = await Subscriber.find({ strategyIds: { $in: [id] } }).count();
+
+    console.log(count);
     const data = await Subscriber.aggregate([
       { $match: { strategyIds: { $in: [id] } } },
       {
@@ -104,6 +109,30 @@ router.get('/strategies-subscribers/:id', async (req, res) => {
   }
 });
 
+router.get('/:link', async (req, res) => {
+  console.log(req.params.link);
+  try {
+    const response = await Strategy.findOne({ strategyLink: req.params.link });
+    if (response) {
+      res.json({ status: 'OK', data: response.accountId });
+    } else {
+      res.json({ status: 'EX' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.json({ status: 'ERR' });
+  }
+});
+
+router.get('/strategies/:id', async (req, res) => {
+  try {
+    const data = await Strategy.findOne({ strategyId: req.params.id });
+    res.json(data);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
   const data = await Strategy.findOne({ strategyId: req.params.id });
   res.json(data);
@@ -124,6 +153,16 @@ router.post(
     res.json({ RegisterStrategy: result });
   }
 );
+
+router.put('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
+  try {
+    const response = await Strategy.findByIdAndUpdate(req.params.id, req.body);
+    res.json(response);
+  } catch (err) {
+    console.log(err);
+    res.status(505).json('failed');
+  }
+});
 
 router.delete(
   '/:strategyId',
