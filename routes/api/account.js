@@ -20,17 +20,21 @@ router.get('/all-accounts', auth([Role.User, Role.Admin]), async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-
+/**
+ * send account by req.user
+ */
 router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
   const { page, pagecount, sort, type } = req.query;
-
   try {
     console.log(
       'account file=>>>>>>>>>>>>>>>>>>>>',
       page ? pagecount * (page - 1) : 0
     );
-    const count = await Account.count();
+    const count = await Account.find({ user: req.user._id }).count();
     const data = await Account.aggregate([
+      {
+        $match: { user: req.user._id }
+      },
       {
         $lookup: {
           from: Trade.collection.name,
@@ -71,6 +75,7 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
           balance: 1,
           equity: 1,
           total: 1,
+          user: 1
         },
       },
       {
@@ -96,6 +101,7 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
           balance: 1,
           equity: 1,
           total: 1,
+          user: 1,
         },
       },
       {
@@ -115,14 +121,17 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
     console.log(err);
   }
 });
-
+/**
+ * @route api/account/accountInfo/:id
+ * @desc  send accountInfo using accountId
+ */
 router.get('/accountInfo/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const totalTrades = await History.find({ accountId: id }).count();
 
     if (totalTrades === 0) {
-      res.json({});
+      return res.json({});
     }
 
     const win = await History.find({ success: 'won', accountId: id }).count();

@@ -6,7 +6,7 @@ const Account = require('../../models/Account');
 
 const router = express();
 
-router.get('/', async (req, res) => {
+router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
   const { page, pagecount, sort, type } = req.query;
 
   try {
@@ -23,6 +23,9 @@ router.get('/', async (req, res) => {
           foreignField: 'accountId',
           as: 'account',
         },
+      },
+      {
+        $match: { "account.user": req.user._id }
       },
       {
         $project: {
