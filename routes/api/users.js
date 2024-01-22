@@ -58,7 +58,7 @@ router.put('/max-account/:id', auth([Role.Admin]), async (req, res) => {
 // @route    GET api/users
 // @desc     Get all users
 // @access   Public
-router.get('/all', auth([Role.User, Role.Admin]), async (req, res) => {
+router.get('/all', auth([Role.Admin]), async (req, res) => {
   try {
     const { page, pagecount, sort, type } = req.query;
     console.log(page, pagecount, sort, type);
@@ -99,6 +99,8 @@ router.get('/all', auth([Role.User, Role.Admin]), async (req, res) => {
           subscribers: { $size: '$subscribers' },
         },
       },
+      { $skip: page ? pagecount * (page - 1) : 0 },
+      { $limit: pagecount ? parseInt(pagecount) : 10 },
     ]);
     return res.json({ data: users, count });
   } catch (err) {
@@ -486,7 +488,19 @@ router.put(
 
 router.delete('/:id', auth([Role.Admin]), async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (user) {
+      const accounts = await Account.find({ user: user._id });
+      const accountIds = accounts.map(item => item.accountId);
+
+      const strategies = await Strategy.find({ strategyId: { $in: accountIds } });
+      const strategyIds = strategies.map(item => item.strategyId);
+      await Strategy.deleteMany({ strategyId: { $in: accountIds } }); //delete strategies
+      await Strategy.updateMany({ $pull: { proposers: user._id } }); //delete propsers in strategy
+
+      await Subscriber.deleteMany({ subscriberId: { $in: accountIds } }); //delete subscribers
+      await Subscriber.updateMany({ $pull: { strategyIds: { $in: strategyIds } } });
+    }
     res.json({ status: "OK" });
   } catch (err) {
     console.log(err)
