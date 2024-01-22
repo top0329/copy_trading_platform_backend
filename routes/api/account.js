@@ -139,8 +139,6 @@ router.get('/accountInfo/:id', async (req, res) => {
       },
     ]);
 
-    console.log(lots);
-    lots = lots[0].sum;
 
     const longs = await History.find({
       accountId: id,
@@ -207,7 +205,7 @@ router.get('/accountInfo/:id', async (req, res) => {
     const account = await Account.findOne({ accountId: id });
 
     res.json({
-      lots,
+      lots: lots.length > 0 ? lots[0].sum : 0,
       loss,
       win,
       totalTrades,
@@ -217,10 +215,10 @@ router.get('/accountInfo/:id', async (req, res) => {
       shortsWon,
       bestTrade: bestTrade[0],
       worstTrade: worstTrade[0],
-      averageWin: averageWin[0].avg,
-      averageLoss: averageLoss[0].avg,
+      averageWin: averageWin.length > 0 ? averageWin[0].avg : 0,
+      averageLoss: averageLoss.length > 0 ? averageLoss[0].avg : 0,
 
-      deposit: deposit[0].sum,
+      deposit: deposit.length > 0 ? deposit[0].sum : 0,
       balance: account.balance,
       broker: account.broker,
       server: account.server,
@@ -254,9 +252,6 @@ router.get('/accountInfo/view/:id', async (req, res) => {
       },
     ]);
 
-    console.log(lots);
-    lots = lots[0].sum;
-
     const longs = await History.find({
       accountId: id,
       type: 'DEAL_TYPE_BUY',
@@ -322,7 +317,7 @@ router.get('/accountInfo/view/:id', async (req, res) => {
     const account = await Account.findOne({ accountId: id });
 
     res.json({
-      lots,
+      lots: lots.length > 0 ? lots[0].sum : 0,
       loss,
       win,
       totalTrades,
@@ -332,10 +327,10 @@ router.get('/accountInfo/view/:id', async (req, res) => {
       shortsWon,
       bestTrade: bestTrade[0],
       worstTrade: worstTrade[0],
-      averageWin: averageWin[0].avg,
-      averageLoss: averageLoss[0].avg,
+      averageWin: averageWin.length > 0 ? averageWin[0].avg : 0,
+      averageLoss: averageLoss.length > 0 ? averageLoss[0].avg : 0,
 
-      deposit: deposit[0].sum,
+      deposit: deposit.length > 0 ? deposit[0].sum : 0,
       balance: account.balance,
       broker: account.broker,
       server: account.server,
