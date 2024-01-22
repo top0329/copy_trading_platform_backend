@@ -495,7 +495,7 @@ router.delete('/:id', auth([Role.Admin]), async (req, res) => {
 
       const strategies = await Strategy.find({ strategyId: { $in: accountIds } });
       const strategyIds = strategies.map(item => item.strategyId);
-      await Strategy.deleteMany({ strategyId: { $in: accountIds } }); //delete strategies
+      await Strategy.deleteMany({ accountId: { $in: accountIds } }); //delete strategies
       await Strategy.updateMany({ $pull: { proposers: user._id } }); //delete propsers in strategy
 
       await Subscriber.deleteMany({ subscriberId: { $in: accountIds } }); //delete subscribers

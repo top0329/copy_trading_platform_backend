@@ -109,12 +109,35 @@ router.get('/strategies-subscribers/:id', async (req, res) => {
   }
 });
 
-router.get('/:link', async (req, res) => {
+router.get('/link/:link', async (req, res) => {
   console.log(req.params.link);
   try {
-    const response = await Strategy.findOne({ strategyLink: req.params.link });
-    if (response) {
-      res.json({ status: 'OK', data: response.accountId });
+    const response = await Strategy.aggregate([
+      {
+        $match: { strategyLink: req.params.link }
+      },
+      {
+        $lookup: {
+          from: Account.collection.name,
+          localField: "accountId",
+          foreignField: "accountId",
+          as: "account"
+        }
+      },
+      {
+        $project: {
+          accountId: 1,
+          "account": 1,
+          live: 1
+        }
+      }
+    ]);
+
+
+    console.log(response[0])
+    // const response = await Strategy.findOne({ strategyLink: req.params.link });
+    if (response.length > 0) {
+      res.json({ status: 'OK', data: response[0] });
     } else {
       res.json({ status: 'EX' });
     }
