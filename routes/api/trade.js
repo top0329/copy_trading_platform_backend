@@ -6,7 +6,7 @@ const Role = require('../../config/role');
 
 const router = express();
 
-router.get('/', async (req, res) => {
+router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
   const { page, pagecount, sort, type } = req.query;
   console.log(
     'trade 1 file=>>>>>>>>>>>>>>>>>>>>',
@@ -24,9 +24,13 @@ router.get('/', async (req, res) => {
         },
       },
       {
+        $match: { "account.user": req.user._id }
+      }, 
+      {
         $project: {
           'account.name': 1,
           'account.login': 1,
+          'account.user': 1,
           id: 1,
           type: 1,
           volume: 1,

@@ -128,7 +128,8 @@ router.get('/link/:link', async (req, res) => {
         $project: {
           accountId: 1,
           "account": 1,
-          live: 1
+          live: 1,
+          setting: 1
         }
       }
     ]);
