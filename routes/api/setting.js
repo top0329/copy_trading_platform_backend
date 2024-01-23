@@ -152,7 +152,7 @@ router.delete("/homepage-content/:id", auth([Role.Admin]), async (req, res) => {
  * @description
  * @access ADMIN
  */
-router.get("/brokers", auth([Role.Admin]), async (req, res) => {
+router.get("/brokers", auth([Role.Admin, Role.User]), async (req, res) => {
   try {
     const data = await Broker.find();
     res.json({ status: "OK", data: data})
