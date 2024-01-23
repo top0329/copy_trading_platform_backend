@@ -95,7 +95,7 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
         },
       },
       {
-        $match: { proposers: { $elemMatch: { $eq: req.user._id } } },
+        $match: req.user.role !== "Admin" ?  { proposers: { $elemMatch: { $eq: req.user._id } } } : {},
       },
       {
         $project: {
