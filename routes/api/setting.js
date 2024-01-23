@@ -17,9 +17,9 @@ const Strategy = require('../../models/Strategy');
 const Account = require('../../models/Account');
 const Subscriber = require('../../models/Subscriber');
 const HomePageContent = require('../../models/HomePageContent');
-const SiteSetting = require("../../models/SiteSetting");
+const SiteSetting = require('../../models/SiteSetting');
 
-const Broker = require("../../models/Broker");
+const Broker = require('../../models/Broker');
 
 /**
  * @route   GET api/settings/site-setting
@@ -29,10 +29,10 @@ const Broker = require("../../models/Broker");
 router.get('/site-setting', auth([Role.Admin]), async (req, res) => {
   try {
     const settings = await SiteSetting.find();
-    res.json({ status: "OK", data: settings });
+    res.json({ status: 'OK', data: settings });
   } catch (err) {
-    console.log(err)
-    res.json({ status: "ERR" })
+    console.log(err);
+    res.json({ status: 'ERR' });
   }
 });
 
@@ -46,24 +46,35 @@ router.put('/site-setting', auth([Role.Admin]), async (req, res) => {
     const { userRegistration, maxAccount } = req.body;
     console.log(userRegistration, maxAccount);
 
-    const _userRegistration = await SiteSetting.findOne({ key: "userRegistration" });
-    if(_userRegistration) {
-      await SiteSetting.findOneAndUpdate({ key: "userRegistration" }, { value: userRegistration });
+    const _userRegistration = await SiteSetting.findOne({
+      key: 'userRegistration',
+    });
+    if (_userRegistration) {
+      await SiteSetting.findOneAndUpdate(
+        { key: 'userRegistration' },
+        { value: userRegistration }
+      );
     } else {
-      await new SiteSetting({ key: "userRegistration", value: userRegistration }).save();
+      await new SiteSetting({
+        key: 'userRegistration',
+        value: userRegistration,
+      }).save();
     }
 
-    const _maxAccount = await SiteSetting.findOne({ key: "maxAccount" });
-    if(_maxAccount) {
-      await SiteSetting.findOneAndUpdate({ key: "maxAccount" }, { value: maxAccount });
+    const _maxAccount = await SiteSetting.findOne({ key: 'maxAccount' });
+    if (_maxAccount) {
+      await SiteSetting.findOneAndUpdate(
+        { key: 'maxAccount' },
+        { value: maxAccount }
+      );
     } else {
-      await new SiteSetting({ key: "maxAccount", value: maxAccount }).save();
+      await new SiteSetting({ key: 'maxAccount', value: maxAccount }).save();
     }
 
-    res.json({ status: "OK" });
+    res.json({ status: 'OK' });
   } catch (err) {
-    console.log(err)
-    res.json({ status: "ERR" })
+    console.log(err);
+    res.json({ status: 'ERR' });
   }
 });
 
@@ -75,14 +86,14 @@ router.put('/site-setting', auth([Role.Admin]), async (req, res) => {
 router.get('/homepage-content', async (req, res) => {
   try {
     const contents = await HomePageContent.find().sort('-updatedAt');
-    if ( contents.length > 0 ) {
+    if (contents.length > 0) {
       res.json(contents[0]);
     } else {
-      res.json({ title: "", body: "" })
+      res.json({ title: '', body: '' });
     }
   } catch (err) {
-    console.log(err)
-    res.json({ status: "ERR" })
+    console.log(err);
+    res.json({ status: 'ERR' });
   }
 });
 
@@ -91,14 +102,14 @@ router.get('/homepage-content', async (req, res) => {
  * @description
  * @access ADMIN
  */
-router.post("/brokers", auth([Role.Admin]), async (req, res) => {
-  console.log("asdfasdf");
+router.post('/brokers', auth([Role.Admin]), async (req, res) => {
+  console.log('asdfasdf');
   try {
-    const data = await new Broker({ broker: req.body.broker }).save()
-    res.json({ status: "OK", data: data});
+    const data = await new Broker({ broker: req.body.broker }).save();
+    res.json({ status: 'OK', data: data });
   } catch (e) {
     console.log(e);
-    res.json({ status: "ERR" })
+    res.json({ status: 'ERR' });
   }
 });
 /**
@@ -106,29 +117,28 @@ router.post("/brokers", auth([Role.Admin]), async (req, res) => {
  * @description
  * @access ADMIN
  */
-router.post("/homepage-content", auth([Role.Admin]), async (req, res) => {
+router.post('/homepage-content', auth([Role.Admin]), async (req, res) => {
   try {
     const data = await new HomePageContent(req.body).save();
-    res.json({ status: "OK", data: data })
+    res.json({ status: 'OK', data: data });
   } catch (e) {
     console.log(e);
-    res.json({ status: "ERR" })
+    res.json({ status: 'ERR' });
   }
 });
-
 
 /**
  * @route PUT api/settings/homepage-content
  * @description
  * @access ADMIN
  */
-router.put("/homepage-content/:id", auth([Role.Admin]), async (req, res) => {
+router.put('/homepage-content/:id', auth([Role.Admin]), async (req, res) => {
   try {
     await HomePageContent.findByIdAndUpdate(req.params.id, req.body);
-    res.json({ status: "OK" })
+    res.json({ status: 'OK' });
   } catch (e) {
     console.log(e);
-    res.json({ status: "ERR" })
+    res.json({ status: 'ERR' });
   }
 });
 
@@ -137,13 +147,13 @@ router.put("/homepage-content/:id", auth([Role.Admin]), async (req, res) => {
  * @description
  * @access ADMIN
  */
-router.delete("/homepage-content/:id", auth([Role.Admin]), async (req, res) => {
+router.delete('/homepage-content/:id', auth([Role.Admin]), async (req, res) => {
   try {
-    await HomePageContent.deleteOne({_id: req.params.id})
-    res.json({ status: "OK" })
+    await HomePageContent.deleteOne({ _id: req.params.id });
+    res.json({ status: 'OK' });
   } catch (e) {
     console.log(e);
-    res.json({ status: "ERR" })
+    res.json({ status: 'ERR' });
   }
 });
 
@@ -154,7 +164,7 @@ router.delete("/homepage-content/:id", auth([Role.Admin]), async (req, res) => {
  */
 router.get("/brokers", auth([Role.Admin, Role.User]), async (req, res) => {
   try {
-    const data = await Broker.find();
+    const data = await Broker.find().sort({ broker: 1 });
     res.json({ status: "OK", data: data})
   } catch (e) {
     console.log(e);
@@ -162,21 +172,19 @@ router.get("/brokers", auth([Role.Admin, Role.User]), async (req, res) => {
   }
 });
 
-
 /**
  * @route DELETE api/settings/brokers/:id
  * @description
  * @access ADMIN
  */
-router.delete("/brokers/:id", auth([Role.Admin]), async (req, res) => {
+router.delete('/brokers/:id', auth([Role.Admin]), async (req, res) => {
   try {
     await Broker.findByIdAndDelete(req.params.id);
-    res.json({ status: "OK" });
+    res.json({ status: 'OK' });
   } catch (e) {
     console.log(e);
-    res.json({ status: "ERR" })
+    res.json({ status: 'ERR' });
   }
 });
-
 
 module.exports = router;
