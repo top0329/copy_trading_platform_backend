@@ -161,7 +161,7 @@ router.get('/strategies-subscribers/:id', async (req, res) => {
       { $limit: pagecount ? parseInt(pagecount) : 10 },
     ]);
 
-    //console.log(data);
+    console.log(data);
     res.json({ data, count });
   } catch (err) {
     console.log(err);
