@@ -23,51 +23,59 @@ router.get(
   }
 );
 
-router.post("/follow", auth([Role.User, Role.Admin]), async (req, res) => {
+router.post('/follow', auth([Role.User, Role.Admin]), async (req, res) => {
   try {
-    const response = await Strategy.findOneAndUpdate({ accountId: req.body.id }, { $push: { proposers: req.user._id } });
-    //send message for follow...
-    const baseUrl = `http://45.8.22.219:5173`;
-    const content = `
-      <div style="text-align: center; margin: 20px; font-size: 24px;">
-        <p style="font-weight: 1000;">${req.user.fullName}</p>
-        
-        <p>You have just had a new signup for <span style="font-weight: 900;">${response.name}</span></p>
+    const response = await Strategy.findOne({ accountId: req.body.id });
+    // return console.log(response.proposers)
+    if (response.proposers.indexOf(req.user._id) !== -1) {
+      console.log('sasdfasdf');
+      return res.json({ status: 'OK', msg: 'Already followed' });
+    } else {
+      const response = await Strategy.findOneAndUpdate(
+        { accountId: req.body.id },
+        { $push: { proposers: req.user._id } }
+      );
+      //send message for follow...
+      const baseUrl = `http://45.8.22.219:5173`;
+      const content = `
+        <div style="text-align: center; margin: 20px; font-size: 24px;">
+          <p style="font-weight: 1000;">${req.user.fullName}</p>
 
-        <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Access Result: <span style="font-weight: 900;">Trade Copier</span></p>
-        <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Non billable access</p>
-        <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Amount Received: <span style="font-weight: 900;">0</span></p>
+          <p>You have just had a new signup for <span style="font-weight: 900;">${response.name}</span></p>
 
-        <p style="line-height: 0; margin-top: 50px; font-size: 20px;">Name: <span style="font-weight: 900;">${req.user.fullName}</span></p>
-        <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
+          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Access Result: <span style="font-weight: 900;">Trade Copier</span></p>
+          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Non billable access</p>
+          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Amount Received: <span style="font-weight: 900;">0</span></p>
 
-        <p style="line-height: 0.7; margin-bottom: 30px; font-size: 20px; margin-top: 40px;">A full details can be found in your signal follower section.</p>
+          <p style="line-height: 0; margin-top: 50px; font-size: 20px;">Name: <span style="font-weight: 900;">${req.user.fullName}</span></p>
+          <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
 
-        <a style="
-            background-color: rgb(28, 108, 253);
-            padding: 10px 20px;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            text-decoration: none;"
-            href="${baseUrl}/signals">
-            My followers
-        </a>
+          <p style="line-height: 0.7; margin-bottom: 30px; font-size: 20px; margin-top: 40px;">A full details can be found in your signal follower section.</p>
 
-      </div>`;
-    sendMail(process.env.EMAIL_USERNAME, content);
+          <a style="
+              background-color: rgb(28, 108, 253);
+              padding: 10px 20px;
+              color: white;
+              border: none;
+              border-radius: 10px;
+              text-decoration: none;"
+              href="${baseUrl}/signal-followers">
+              My followers
+          </a>
 
-    res.json({ status: "OK" });
+        </div>`;
+      sendMail(process.env.EMAIL_USERNAME, content);
+
+      return res.json({ status: 'OK', msg: 'Successfully followed' });
+    }
   } catch (err) {
     console.log(err);
     res.json({ status: 'ERR' });
   }
-})
+});
 
 router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
-
-  console.log(req.user._id)
-
+  console.log(req.user._id);
 
   const { page, pagecount, sort, type } = req.query;
   const _user = req.user._id;
@@ -86,8 +94,8 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
           as: 'account',
         },
       },
-      { 
-        $match: { proposers: { $elemMatch: { $eq: req.user._id } } } 
+      {
+        $match: { proposers: { $elemMatch: { $eq: req.user._id } } },
       },
       {
         $project: {
@@ -100,7 +108,7 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
           description: 1,
           createdAt: 1,
           updatedAt: 1,
-          proposers: 1
+          proposers: 1,
         },
       },
       // {$sort: ...},
@@ -166,28 +174,27 @@ router.get('/link/:link', async (req, res) => {
   try {
     const response = await Strategy.aggregate([
       {
-        $match: { strategyLink: req.params.link }
+        $match: { strategyLink: req.params.link },
       },
       {
         $lookup: {
           from: Account.collection.name,
-          localField: "accountId",
-          foreignField: "accountId",
-          as: "account"
-        }
+          localField: 'accountId',
+          foreignField: 'accountId',
+          as: 'account',
+        },
       },
       {
         $project: {
           accountId: 1,
-          "account": 1,
+          account: 1,
           live: 1,
-          setting: 1
-        }
-      }
+          setting: 1,
+        },
+      },
     ]);
 
-
-    console.log(response[0])
+    console.log(response[0]);
     // const response = await Strategy.findOne({ strategyLink: req.params.link });
     if (response.length > 0) {
       res.json({ status: 'OK', data: response[0] });
