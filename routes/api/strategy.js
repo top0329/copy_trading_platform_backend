@@ -8,6 +8,8 @@ const auth = require('../../middleware/auth');
 const Role = require('../../config/role');
 const Subscriber = require('../../models/Subscriber');
 
+const sendMail = require('../../utils/sendMail');
+
 const router = express();
 
 //Get Strategy List from MetaAPI
@@ -21,8 +23,54 @@ router.get(
   }
 );
 
+router.post("/follow", auth([Role.User, Role.Admin]), async (req, res) => {
+  try {
+    const response = await Strategy.findOneAndUpdate({ accountId: req.body.id }, { $push: { proposers: req.user._id } });
+    //send message for follow...
+    const baseUrl = `http://45.8.22.219:5173`;
+    const content = `
+      <div style="text-align: center; margin: 20px; font-size: 24px;">
+        <p style="font-weight: 1000;">${req.user.fullName}</p>
+        
+        <p>You have just had a new signup for <span style="font-weight: 900;">${response.name}</span></p>
+
+        <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Access Result: <span style="font-weight: 900;">Trade Copier</span></p>
+        <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Non billable access</p>
+        <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Amount Received: <span style="font-weight: 900;">0</span></p>
+
+        <p style="line-height: 0; margin-top: 50px; font-size: 20px;">Name: <span style="font-weight: 900;">${req.user.fullName}</span></p>
+        <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
+
+        <p style="line-height: 0.7; margin-bottom: 30px; font-size: 20px; margin-top: 40px;">A full details can be found in your signal follower section.</p>
+
+        <a style="
+            background-color: rgb(28, 108, 253);
+            padding: 10px 20px;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            text-decoration: none;"
+            href="${baseUrl}/signals">
+            My followers
+        </a>
+
+      </div>`;
+    sendMail(process.env.EMAIL_USERNAME, content);
+
+    res.json({ status: "OK" });
+  } catch (err) {
+    console.log(err);
+    res.json({ status: 'ERR' });
+  }
+})
+
 router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
+
+  console.log(req.user._id)
+
+
   const { page, pagecount, sort, type } = req.query;
+  const _user = req.user._id;
   console.log(
     'strategy 1 file=>>>>>>>>>>>>>>>>>>>>',
     page ? pagecount * (page - 1) : 0
@@ -38,6 +86,9 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
           as: 'account',
         },
       },
+      { 
+        $match: { proposers: { $elemMatch: { $eq: req.user._id } } } 
+      },
       {
         $project: {
           'account.name': 1,
@@ -49,6 +100,7 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
           description: 1,
           createdAt: 1,
           updatedAt: 1,
+          proposers: 1
         },
       },
       // {$sort: ...},
@@ -56,7 +108,7 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
       { $limit: pagecount ? parseInt(pagecount) : 10 },
     ]);
 
-    //console.log(data);
+    console.log(data);
     res.json({ data, count });
   } catch (err) {
     console.log(err);
