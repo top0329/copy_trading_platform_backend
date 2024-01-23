@@ -33,7 +33,7 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
     const count = await Account.find({ user: req.user._id }).count();
     const data = await Account.aggregate([
       {
-        $match: { user: req.user._id }
+        $match: req.user.role !== "Admin" ?  { user: req.user._id } : {},
       },
       {
         $lookup: {
@@ -554,7 +554,7 @@ router.get('/my-accounts', auth([Role.User, Role.Admin]), async (req, res) => {
 
   try {
     const count = await Account.count();
-    const data = await Account.find({ user: req.user.id })
+    const data = await Account.find(req.user.role !== "Admin" ?  { user: req.user._id } : {})
       .skip(page ? pagecount * (page - 1) : 0)
       .limit(pagecount ? parseInt(pagecount) : 10);
 
