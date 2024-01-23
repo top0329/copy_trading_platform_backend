@@ -28,7 +28,6 @@ router.post('/follow', auth([Role.User, Role.Admin]), async (req, res) => {
     const response = await Strategy.findOne({ accountId: req.body.id });
     // return console.log(response.proposers)
     if (response.proposers.indexOf(req.user._id) !== -1) {
-      console.log('sasdfasdf');
       return res.json({ status: 'OK', msg: 'Already followed' });
     } else {
       const response = await Strategy.findOneAndUpdate(
