@@ -186,7 +186,15 @@ router.get('/reset-password/:email', async (req, res) => {
       expiresIn: '3m',
     });
     const baseUrl = `http://45.8.22.219:5173`;
-    const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your reset-password verification link. Please click the button below to reset your password:</p><a href="${baseUrl}/reset-password/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Reset Password</a></div>`;
+    const content = 
+      `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;">
+          <h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1>
+          <p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To Our Website</p>
+          <p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your reset-password verification link. Please
+              click the button below to reset your password:</p><a href="${baseUrl}/reset-password/${token}"
+              style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Reset
+              Password</a>
+      </div>`;
     console.log(`send reset-password link to ${email}`);
     sendMail(email, content);
     return res.json({
@@ -198,6 +206,23 @@ router.get('/reset-password/:email', async (req, res) => {
   }
 });
 
+router.post("/contact", auth([Role.User, Role.Admin]), async(req, res) => {
+  const content = `
+    <div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;">
+      <h1 style="font-size: 27px; color: #333; margin-bottom: 20px;">${req.body.subject}</h1>
+      <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
+        department: ${req.body.department}
+      </p>
+      <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
+        ${req.body.message}
+      </p>
+      <p style="line-height: 0; margin-top: 50px; font-size: 20px;">Name: <span style="font-weight: 900;">${req.user.fullName}</span></p>
+      <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
+
+    </div>`;
+  sendMail(process.env.EMAIL_USERNAME, content);
+  res.json({status: 'OK'})
+})
 
 // @route    POST api/users
 // @desc     Register user
@@ -250,29 +275,28 @@ router.post(
       console.log(baseUrl);
       const content = `
         <div style="text-align: center">
-      <div>Hi 👋</div>
-      <div><h3>Get started by verifying your account</h3></div>
-      <div>
-        <pre style="font-size: 16px">
-        We are excited to have you at Marinex🚢. We need your confirmation that
-        you will be using this email to access the platform
-        </pre>
-          <p>Verify the email by clicking the button below:</p>
-          <a
-            style="
-              background-color: rgb(28, 108, 253);
-              padding: 10px 20px;
-              color: white;
-              border: none;
-              border-radius: 10px;
-              text-decoration: none;
-            "
-            href="${baseUrl}/auth/verify-email/${result.emailVerifyToken}"
-          >
-            Verify Your Email Address
-          </a>
-        </div>
-      </div>`;
+          <div>Hi <font style="font-size: 20px; color: blue; text-decoration: underline;">${result.email}</font></div>
+          <div>
+              <h3>Get started by verifying your account</h3>
+          </div>
+          <div>
+              <pre style="font-size: 16px">
+                  We are excited to have you at Here. We need your confirmation that
+                  you will be using this email to access the platform
+              </pre>
+              <p>Verify the email by clicking the button below:</p>
+              <a style="
+                  background-color: rgb(28, 108, 253);
+                  padding: 10px 20px;
+                  color: white;
+                  border: none;
+                  border-radius: 10px;
+                  text-decoration: none;
+                " href="${baseUrl}/auth/verify-email/${result.emailVerifyToken}">
+                  Verify Your Email Address
+              </a>
+          </div>
+        </div>`;
       sendMail(result.email, content);
       return res.status(201).json({
         msg: 'User created successfully',
