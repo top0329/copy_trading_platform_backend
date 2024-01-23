@@ -1,5 +1,4 @@
 {
-  // "mongoURI": "mongodb://127.0.0.1:27017/copy_trading_platform",
   "mongoURI": "mongodb+srv://arescolin0329:ogyKXMBJijp6Jg3j@copy-factory.4citbwa.mongodb.net/",
   "jwtSecret": "secret"
 }
