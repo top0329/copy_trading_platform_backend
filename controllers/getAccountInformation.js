@@ -8,6 +8,15 @@ const token = process.env.METAAPI_TOKEN;
 
 module.exports = async function getAccountInformation(accountId) {
   try {
+    const provisioningData = await axios.get(
+      `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts/${accountId}`,
+      {
+        headers: {
+          'auth-token': token,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
     const accountInformation = await axios.get(
       `https://mt-client-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${accountId}/account-information`,
       {
@@ -44,12 +53,17 @@ module.exports = async function getAccountInformation(accountId) {
         accountCurrencyExchangeRate:
           accountInformation.data.accountCurrencyExchangeRate,
         symbols: symbols.data,
+        connectionStatus: provisioningData.data.connectionStatus,
+        manualTrades: provisioningData.data.manualTrades,
+        reliability: provisioningData.data.reliability,
+        baseCurrency: provisioningData.data.baseCurrency,
       },
       {
         new: true,
         upsert: true,
       }
     );
+    console.log(accountData)
     return accountData;
   } catch (e) {
     console.log('err in updating...');

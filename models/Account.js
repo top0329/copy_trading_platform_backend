@@ -105,6 +105,15 @@ const AccountSchema = new Schema(
         type: String,
       },
     ],
+    manualTrades: {
+      type: Boolean,
+    },
+    reliability: {
+      type: String,
+    },
+    baseCurrency: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
