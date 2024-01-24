@@ -185,8 +185,8 @@ router.get('/reset-password/:email', async (req, res) => {
     const token = jwt.sign({ email: email }, config.get('jwtSecret'), {
       expiresIn: '3m',
     });
-    const baseUrl = `http://45.8.22.219:5173`;
-    const content = 
+    const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
+    const content =
       `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;">
           <h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1>
           <p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To Our Website</p>
@@ -271,7 +271,7 @@ router.post(
       user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
       const result = await user.save();
       console.log(result);
-      const baseUrl = `http://45.8.22.219:5173`;
+      const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
       console.log(baseUrl);
       const content = `
         <div style="text-align: center">
@@ -353,7 +353,7 @@ router.post(
         user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
         await user.save();
 
-        const baseUrl = `http://45.8.22.219:5173`;
+        const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
         const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
         console.log('email send -->');
         sendMail(user.email, content);
@@ -380,7 +380,7 @@ router.post('/re-send/email-verification', async (req, res) => {
       user.emailVerifyToken = crypto.randomBytes(30).toString('hex');
       user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
       await user.save();
-      const baseUrl = `http://45.8.22.219:5173`;
+      const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
       const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
       sendMail(user.email, content);
       return res.json({
@@ -445,7 +445,7 @@ router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
       oldUser.emailVerified = false;
       oldUser.emailVerifyToken = crypto.randomBytes(30).toString('hex');
       oldUser.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
-      const baseUrl = `http://45.8.22.219:5173`;
+      const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
       const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/email-verify-update/${oldUser.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
       sendMail(oldUser.email, content);
       console.log(oldUser.email);
