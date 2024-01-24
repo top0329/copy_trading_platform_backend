@@ -33,7 +33,7 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
     const count = await Account.find({ user: req.user._id }).count();
     const data = await Account.aggregate([
       {
-        $match: req.user.role !== "Admin" ?  { user: req.user._id } : {},
+        $match: req.user.role !== 'Admin' ? { user: req.user._id } : {},
       },
       {
         $lookup: {
@@ -75,7 +75,8 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
           balance: 1,
           equity: 1,
           total: 1,
-          user: 1
+          user: 1,
+          connectionStatus: 1,
         },
       },
       {
@@ -102,6 +103,7 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
           equity: 1,
           total: 1,
           user: 1,
+          connectionStatus: 1,
         },
       },
       {
