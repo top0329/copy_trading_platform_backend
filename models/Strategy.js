@@ -47,12 +47,12 @@ const StrategySchema = new Schema(
       },
     },
     setting: {
-      openTrades: { type: Boolean, default: true },
-      tradeHistory: { type: Boolean, default: true },
-      balanceInformation: { type: Boolean, default: true },
-      broker: { type: Boolean, default: true },
-      accountDetails: { type: Boolean, default: true },
-      ticket: { type: Boolean, default: true },
+      openTrades: { type: Boolean, default: false },
+      tradeHistory: { type: Boolean, default: false },
+      balanceInformation: { type: Boolean, default: false },
+      broker: { type: Boolean, default: false },
+      accountDetails: { type: Boolean, default: false },
+      ticket: { type: Boolean, default: false },
     },
   },
   { timestamps: true }
