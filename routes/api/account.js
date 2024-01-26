@@ -30,7 +30,12 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
       'account file=>>>>>>>>>>>>>>>>>>>>',
       page ? pagecount * (page - 1) : 0
     );
-    const count = await Account.find({ user: req.user._id }).count();
+    let count = 0;
+    if (req.user.role === 'Admin') {
+      count = await Account.find().count();
+    } else {
+      count = await Account.find().count({ user: req.user._id });
+    }
     const data = await Account.aggregate([
       {
         $match: req.user.role !== 'Admin' ? { user: req.user._id } : {},
@@ -149,7 +154,6 @@ router.get('/accountInfo/:id', async (req, res) => {
         },
       },
     ]);
-
 
     const longs = await History.find({
       accountId: id,
@@ -556,7 +560,9 @@ router.get('/my-accounts', auth([Role.User, Role.Admin]), async (req, res) => {
 
   try {
     const count = await Account.count();
-    const data = await Account.find(req.user.role !== "Admin" ?  { user: req.user._id } : {})
+    const data = await Account.find(
+      req.user.role !== 'Admin' ? { user: req.user._id } : {}
+    )
       .skip(page ? pagecount * (page - 1) : 0)
       .limit(pagecount ? parseInt(pagecount) : 10);
 

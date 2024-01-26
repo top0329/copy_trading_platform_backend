@@ -112,7 +112,6 @@ router.get('/all', auth([Role.Admin]), async (req, res) => {
 // @route    GET api/users/me
 // @desc     Get user data
 // @access   Public
-
 router.get('/me', auth([Role.User, Role.Admin]), async (req, res) => {
   const user = await User.findOne({ _id: req.user.id });
 
@@ -123,12 +122,9 @@ router.get('/me', auth([Role.User, Role.Admin]), async (req, res) => {
   }
 });
 
-
-
 // @route    GET api/users/verify-email/:token
 // @desc     Authenticate user & get token
 // @access   Public
-
 router.get('/verify-email/:token', async (req, res) => {
   try {
     const user = await User.findOne({
@@ -185,7 +181,7 @@ router.get('/reset-password/:email', async (req, res) => {
     const token = jwt.sign({ email: email }, config.get('jwtSecret'), {
       expiresIn: '3m',
     });
-    const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
+    const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
     const content =
       `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;">
           <h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1>
@@ -271,7 +267,7 @@ router.post(
       user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
       const result = await user.save();
       console.log(result);
-      const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
+      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
       console.log(baseUrl);
       const content = `
         <div style="text-align: center">
@@ -353,8 +349,8 @@ router.post(
         user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
         await user.save();
 
-        const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
-        const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
+        const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
+        const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To TradeCopierSignal Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
         console.log('email send -->');
         sendMail(user.email, content);
         return res.send({
@@ -380,8 +376,8 @@ router.post('/re-send/email-verification', async (req, res) => {
       user.emailVerifyToken = crypto.randomBytes(30).toString('hex');
       user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
       await user.save();
-      const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
-      const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
+      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
+      const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To TradeCopierSignal Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/auth/verify-email/${user.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
       sendMail(user.email, content);
       return res.json({
         msg: 'Email verification has sent to your email',
@@ -397,7 +393,6 @@ router.post('/re-send/email-verification', async (req, res) => {
 // @route    POST api/users/reset-password
 // @desc     Reset password
 // @access   Private
-
 router.post('/reset-password', async (req, res) => {
   try {
     const { password, token } = req.body;
@@ -431,7 +426,6 @@ router.post('/reset-password', async (req, res) => {
 // @route    PUT api/users/me
 // @desc     Update user data
 // @access   Private
-
 router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
   try {
     const oldUser = await User.findOne({ _id: req.user.id });
@@ -445,8 +439,8 @@ router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
       oldUser.emailVerified = false;
       oldUser.emailVerifyToken = crypto.randomBytes(30).toString('hex');
       oldUser.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
-      const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
-      const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To ShipFinex Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/email-verify-update/${oldUser.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
+      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
+      const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To TradeCopierSignal Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/email-verify-update/${oldUser.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
       sendMail(oldUser.email, content);
       console.log(oldUser.email);
       const user = await oldUser.save();
@@ -464,7 +458,6 @@ router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
 // @route    GET api/users/me
 // @desc     Get user data
 // @access   Public
-
 router.put(
   '/update-password',
   auth([Role.User, Role.Admin]),
@@ -509,7 +502,6 @@ router.put(
 // @route    GET api/users/:id
 // @desc     Delete user data
 // @access   admin
-
 router.delete('/:id', auth([Role.Admin]), async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
