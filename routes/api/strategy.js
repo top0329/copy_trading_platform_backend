@@ -35,7 +35,7 @@ router.post('/follow', auth([Role.User, Role.Admin]), async (req, res) => {
         { $push: { proposers: req.user._id } }
       );
       //send message for follow...
-      const baseUrl = `https://copy-trading-platform-frontend-70wixm5gg-jordon-chens-projects.vercel.app`;
+      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
       const content = `
         <div style="text-align: center; margin: 20px; font-size: 24px;">
           <p style="font-weight: 1000;">${req.user.fullName}</p>
