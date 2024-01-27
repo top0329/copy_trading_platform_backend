@@ -26,15 +26,15 @@ module.exports = async function getAccountInformation(accountId) {
         },
       }
     );
-    const symbols = await axios.get(
-      `https://mt-client-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${accountId}/symbols`,
-      {
-        headers: {
-          'auth-token': token,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    // const symbols = await axios.get(
+    //   `https://mt-client-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${accountId}/symbols`,
+    //   {
+    //     headers: {
+    //       'auth-token': token,
+    //       'Content-Type': 'application/json',
+    //     },
+    //   }
+    // );
     const accountData = await Account.findOneAndUpdate(
       { accountId: accountId },
       {
@@ -52,7 +52,7 @@ module.exports = async function getAccountInformation(accountId) {
         investorMode: accountInformation.data.investorMode,
         accountCurrencyExchangeRate:
           accountInformation.data.accountCurrencyExchangeRate,
-        symbols: symbols.data,
+        // symbols: symbols.data,
         connectionStatus: provisioningData.data.connectionStatus,
         manualTrades: provisioningData.data.manualTrades,
         reliability: provisioningData.data.reliability,
@@ -67,5 +67,16 @@ module.exports = async function getAccountInformation(accountId) {
     return accountData;
   } catch (e) {
     console.log('err in updating...');
+    const accountData = await Account.findOneAndUpdate(
+      { accountId: accountId },
+      {
+        connectionStatus: 'DISCONNECTED',
+      },
+      {
+        new: true,
+        upsert: true,
+      }
+    );
+    console.log(accountData);
   }
 };
