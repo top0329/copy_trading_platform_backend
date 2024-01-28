@@ -90,7 +90,6 @@ router.put(
   auth([Role.User, Role.Admin]),
   async (req, res) => {
     try {
-      console.log(req.body);
       const response = await axios.put(
         `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/subscribers/${req.params.subscriberId}`,
         req.body,
