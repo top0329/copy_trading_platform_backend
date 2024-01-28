@@ -50,6 +50,14 @@ const SubscriberSchema = new Schema(
         ],
       },
     ],
+    copyStopLoss: {
+      type: Boolean,
+      default: true,
+    },
+    copyTakeProfit: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

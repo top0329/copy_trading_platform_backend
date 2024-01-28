@@ -42,7 +42,11 @@ router.post(
     try {
       const { SubscriberName, SubscriberID, strategyIDs } = req.body;
 
-      const data = await updateSignals(SubscriberName, SubscriberID, strategyIDs);
+      const data = await updateSignals(
+        SubscriberName,
+        SubscriberID,
+        strategyIDs
+      );
       const result = data;
       res.status(200).json({ Subscriber: result });
     } catch (err) {
@@ -71,7 +75,42 @@ router.put(
         { subscriberId: req.params.subscriberId },
         { subscriptions: req.body.subscriptions }
       );
-      res.status(200).json({ msg: 'Successfully updated!', data: response.data });
+      res
+        .status(200)
+        .json({ msg: 'Successfully updated!', data: response.data });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
+  }
+);
+
+router.put(
+  '/update-stops-limits/:subscriberId',
+  auth([Role.User, Role.Admin]),
+  async (req, res) => {
+    try {
+      console.log(req.body);
+      const response = await axios.put(
+        `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/subscribers/${req.params.subscriberId}`,
+        req.body,
+        {
+          headers: {
+            'auth-token': process.env.METAAPI_TOKEN,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const result = await Subscriber.findOneAndUpdate(
+        { subscriberId: req.params.subscriberId },
+        {
+          copyStopLoss: req.body.copyStopLoss,
+          copyTakeProfit: req.body.copyTakeProfit,
+        }
+      );
+      res
+        .status(200)
+        .json({ msg: 'Successfully updated!', data: response.data });
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server Error');
