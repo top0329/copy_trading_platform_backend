@@ -264,7 +264,7 @@ router.post(
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
       user.emailVerifyToken = crypto.randomBytes(30).toString('hex');
-      user.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
+      user.emailVerifyExpire = Date.now() + 10 * 60 * 1000;
       const result = await user.save();
       console.log(result);
       const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
