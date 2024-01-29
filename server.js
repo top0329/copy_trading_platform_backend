@@ -39,10 +39,10 @@ const HOST = process.env.HOST || '45.8.22.219';
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 // app.listen(PORT, HOST, () => console.log(`Server started on port ${PORT} and on host ${HOST}`));
 
-// setInterval(() => {
-//   syncHistory();
-//   syncTrade();
-// }, 60000 * 5);
+setInterval(() => {
+  syncHistory();
+  syncTrade();
+}, 60000 * 5);
 
 // syncTrade();
 // syncHistory();
