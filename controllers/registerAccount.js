@@ -29,8 +29,7 @@ module.exports = async function registerAccount(
 ) {
   try {
     const transactionId = generateTransactionId();
-    let url =
-      'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts';
+    let url = 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts';
     const data = JSON.stringify({
       quoteStreamingIntervalInSeconds: 0.5,
       region: 'new-york',
@@ -72,5 +71,6 @@ module.exports = async function registerAccount(
     return res.data;
   } catch (err) {
     console.log(err);
+    return new Error("failed");
   }
 };

@@ -16,6 +16,7 @@ const sendMail = require('../../utils/sendMail');
 const Strategy = require('../../models/Strategy');
 const Account = require('../../models/Account');
 const Subscriber = require('../../models/Subscriber');
+const SiteSetting = require('../../models/SiteSetting');
 
 /**
  * @route   GET api/users/detail/:id
@@ -238,6 +239,15 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
+    const { value } = await SiteSetting.findOne({ key: "userRegistration" });
+    
+    if ( value === "false" ) {
+      return res
+          .status(400)
+          .json({ errors: [{ msg: 'Not allowed user registration' }] });
+    }
+
     const { fullName, email, password } = req.body;
     try {
       let user = await User.findOne({ email });

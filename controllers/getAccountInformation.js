@@ -1,12 +1,15 @@
 const axios = require('axios');
 const dotenv = require('dotenv');
 const Account = require('../models/Account');
+const { _sleep } = require('../utils/utils');
 
 dotenv.config();
 
 const token = process.env.METAAPI_TOKEN;
 
-module.exports = async function getAccountInformation(accountId) {
+
+
+async function getAccountInformation(accountId) {
   try {
     const provisioningData = await axios.get(
       `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts/${accountId}`,
@@ -78,5 +81,24 @@ module.exports = async function getAccountInformation(accountId) {
       }
     );
     console.log(accountData);
+    return new Error("Err in updating");
   }
 };
+
+async function _updateAccountInformation(id) {
+  for (let i = 0; i < 10; i++) {
+    await _sleep(10);
+    try {
+      await getAccountInformation(id);
+      console.log("update success----------->", { id, i });
+      break;
+    } catch (err) {
+      console.log("update failed------------>", i);
+    }
+  }
+}
+
+module.exports = {
+  _updateAccountInformation,
+  getAccountInformation
+}
