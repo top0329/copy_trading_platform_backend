@@ -8,6 +8,7 @@ const auth = require('../../middleware/auth');
 const Role = require('../../config/role');
 const axios = require('axios');
 const Trade = require('../../models/Trade');
+const Subscriber = require('../../models/Subscriber');
 
 const router = express();
 
@@ -682,9 +683,10 @@ router.delete(
           headers: { 'auth-token': process.env.METAAPI_TOKEN },
         }
       );
-      const result = await Account.findOneAndDelete({
-        accountId: req.params.id,
-      });
+      
+      await Account.findOneAndDelete({ accountId: req.params.id });
+      await Strategy.findOneAndDelete({ accountId: req.params.id });
+      await Subscriber.findOneAndDelete({ subscriberId: req.params.id });
 
       res.json(response.data);
     } catch (err) {

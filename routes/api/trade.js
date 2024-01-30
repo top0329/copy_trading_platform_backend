@@ -13,7 +13,8 @@ router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
     page ? pagecount * (page - 1) : 0
   );
   try {
-    const count = await Trade.count();
+    const count = await Trade.find(req.user.role !== "Admin" ? { "account.user": req.user._id } : {}).count();
+
     const data = await Trade.aggregate([
       {
         $lookup: {
@@ -24,8 +25,8 @@ router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
         },
       },
       {
-        $match: { "account.user": req.user._id }
-      }, 
+        $match: req.user.role !== "Admin" ? { "account.user": req.user._id } : {}
+      },
       {
         $project: {
           'account.name': 1,
@@ -51,6 +52,8 @@ router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
       { $skip: page ? pagecount * (page - 1) : 0 },
       { $limit: pagecount ? parseInt(pagecount) : 10 },
     ]);
+
+    console.log(data)
 
     res.json({ data, count });
   } catch (err) {
