@@ -3,7 +3,7 @@ const registerAccount = require('../../controllers/registerAccount');
 const Account = require('../../models/Account');
 const History = require('../../models/History');
 const Strategy = require('../../models/Strategy');
-const getAccountInformation = require('../../controllers/getAccountInformation');
+const { getAccountInformation, _updateAccountInformation } = require('../../controllers/getAccountInformation');
 const auth = require('../../middleware/auth');
 const Role = require('../../config/role');
 const axios = require('axios');
@@ -16,7 +16,7 @@ router.get('/all-accounts', auth([Role.User, Role.Admin]), async (req, res) => {
   try {
     const allAccounts = await Account.find();
     res.json(allAccounts);
-  } catch (err) {
+  } catch (err) { 
     console.error(err.message);
     res.status(500).send('Server Error');
   }
@@ -591,8 +591,7 @@ router.post(
   auth([Role.User, Role.Admin]),
   async (req, res) => {
     try {
-      const { login, password, name, server, platform, copyFactoryRoles } =
-        req.body;
+      const { login, password, name, server, platform, copyFactoryRoles } = req.body;
       const user = req.user;
       const data = await registerAccount(
         login,
@@ -603,8 +602,8 @@ router.post(
         platform,
         user
       );
-      const result = data;
-      res.json({ AccountRegister: result });
+      _updateAccountInformation(data.id);
+      res.json({ AccountRegister: data });
     } catch (err) {
       console.log(err);
       res.status(500).send('Server Error');
