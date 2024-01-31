@@ -23,56 +23,6 @@ router.get(
   }
 );
 
-router.post('/follow', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const response = await Strategy.findOne({ accountId: req.body.id });
-    // return console.log(response.proposers)
-    if (response.proposers.indexOf(req.user._id) !== -1) {
-      return res.json({ status: 'OK', msg: 'Already followed' });
-    } else {
-      const response = await Strategy.findOneAndUpdate(
-        { accountId: req.body.id },
-        { $push: { proposers: req.user._id } }
-      );
-      //send message for follow...
-      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
-      const content = `
-        <div style="text-align: center; margin: 20px; font-size: 24px;">
-          <p style="font-weight: 1000;">${req.user.fullName}</p>
-
-          <p>You have just had a new signup for <span style="font-weight: 900;">${response.name}</span></p>
-
-          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Access Result: <span style="font-weight: 900;">Trade Copier</span></p>
-          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Non billable access</p>
-          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Amount Received: <span style="font-weight: 900;">0</span></p>
-
-          <p style="line-height: 0; margin-top: 50px; font-size: 20px;">Name: <span style="font-weight: 900;">${req.user.fullName}</span></p>
-          <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
-
-          <p style="line-height: 0.7; margin-bottom: 30px; font-size: 20px; margin-top: 40px;">A full details can be found in your signal follower section.</p>
-
-          <a style="
-              background-color: rgb(28, 108, 253);
-              padding: 10px 20px;
-              color: white;
-              border: none;
-              border-radius: 10px;
-              text-decoration: none;"
-              href="${baseUrl}/signal-followers">
-              My followers
-          </a>
-
-        </div>`;
-      sendMail(process.env.EMAIL_USERNAME, content);
-
-      return res.json({ status: 'OK', msg: 'Successfully followed' });
-    }
-  } catch (err) {
-    console.log(err);
-    res.json({ status: 'ERR' });
-  }
-});
-
 router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
   console.log(req.user._id);
 
@@ -94,7 +44,10 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
         },
       },
       {
-        $match: req.user.role !== "Admin" ?  { proposers: { $elemMatch: { $eq: req.user._id } } } : {},
+        $match:
+          req.user.role !== 'Admin'
+            ? { proposers: { $elemMatch: { $eq: req.user._id } } }
+            : {},
       },
       {
         $project: {
@@ -236,6 +189,56 @@ router.post(
   }
 );
 
+router.post('/follow', auth([Role.User, Role.Admin]), async (req, res) => {
+  try {
+    const response = await Strategy.findOne({ accountId: req.body.id });
+    // return console.log(response.proposers)
+    if (response.proposers.indexOf(req.user._id) !== -1) {
+      return res.json({ status: 'OK', msg: 'Already followed' });
+    } else {
+      const response = await Strategy.findOneAndUpdate(
+        { accountId: req.body.id },
+        { $push: { proposers: req.user._id } }
+      );
+      //send message for follow...
+      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
+      const content = `
+        <div style="text-align: center; margin: 20px; font-size: 24px;">
+          <p style="font-weight: 1000;">${req.user.fullName}</p>
+
+          <p>You have just had a new signup for <span style="font-weight: 900;">${response.name}</span></p>
+
+          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Access Result: <span style="font-weight: 900;">Trade Copier</span></p>
+          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Non billable access</p>
+          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Amount Received: <span style="font-weight: 900;">0</span></p>
+
+          <p style="line-height: 0; margin-top: 50px; font-size: 20px;">Name: <span style="font-weight: 900;">${req.user.fullName}</span></p>
+          <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
+
+          <p style="line-height: 0.7; margin-bottom: 30px; font-size: 20px; margin-top: 40px;">A full details can be found in your signal follower section.</p>
+
+          <a style="
+              background-color: rgb(28, 108, 253);
+              padding: 10px 20px;
+              color: white;
+              border: none;
+              border-radius: 10px;
+              text-decoration: none;"
+              href="${baseUrl}/signal-followers">
+              My followers
+          </a>
+
+        </div>`;
+      sendMail(process.env.EMAIL_USERNAME, content);
+
+      return res.json({ status: 'OK', msg: 'Successfully followed' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.json({ status: 'ERR' });
+  }
+});
+
 router.put('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
   try {
     const response = await Strategy.findByIdAndUpdate(req.params.id, req.body);
@@ -257,7 +260,6 @@ router.delete(
           headers: { 'auth-token': process.env.METAAPI_TOKEN },
         }
       );
-      console.log(response.data);
       await Strategy.findOneAndDelete({ strategyId: req.params.strategyId });
       const result = await Subscriber.find({
         strategyIds: req.params.strategyId,
@@ -272,7 +274,12 @@ router.delete(
           );
           await Subscriber.updateOne(
             { subscriberId: result[i].subscriberId },
-            { $pull: { strategyIds: req.params.strategyId } }
+            {
+              $pull: {
+                strategyIds: req.params.strategyId,
+                subscriptions: { strategyId: req.params.strategyId },
+              },
+            }
           );
         } else {
           await axios.delete(

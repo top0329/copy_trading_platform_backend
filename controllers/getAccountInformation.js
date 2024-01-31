@@ -7,8 +7,6 @@ dotenv.config();
 
 const token = process.env.METAAPI_TOKEN;
 
-
-
 async function getAccountInformation(accountId) {
   try {
     const provisioningData = await axios.get(
@@ -29,15 +27,15 @@ async function getAccountInformation(accountId) {
         },
       }
     );
-    // const symbols = await axios.get(
-    //   `https://mt-client-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${accountId}/symbols`,
-    //   {
-    //     headers: {
-    //       'auth-token': token,
-    //       'Content-Type': 'application/json',
-    //     },
-    //   }
-    // );
+    const symbols = await axios.get(
+      `https://mt-client-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${accountId}/symbols`,
+      {
+        headers: {
+          'auth-token': token,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
     const accountData = await Account.findOneAndUpdate(
       { accountId: accountId },
       {
@@ -55,7 +53,7 @@ async function getAccountInformation(accountId) {
         investorMode: accountInformation.data.investorMode,
         accountCurrencyExchangeRate:
           accountInformation.data.accountCurrencyExchangeRate,
-        // symbols: symbols.data,
+        symbols: symbols.data,
         connectionStatus: provisioningData.data.connectionStatus,
         manualTrades: provisioningData.data.manualTrades,
         reliability: provisioningData.data.reliability,
@@ -80,7 +78,6 @@ async function getAccountInformation(accountId) {
         upsert: true,
       }
     );
-    console.log(accountData);
     return new Error("Err in updating");
   }
 };

@@ -31,6 +31,7 @@ const StrategySchema = new Schema(
     proposers: [
       {
         type: Schema.Types.ObjectId,
+        ref: 'user',
       },
     ],
     terms: {

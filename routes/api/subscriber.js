@@ -60,6 +60,7 @@ router.put(
   '/update-symbol-filter/:subscriberId',
   auth([Role.User, Role.Admin]),
   async (req, res) => {
+    console.log(req.body)
     try {
       const response = await axios.put(
         `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/subscribers/${req.params.subscriberId}`,
@@ -72,8 +73,18 @@ router.put(
         }
       );
       const result = await Subscriber.findOneAndUpdate(
-        { subscriberId: req.params.subscriberId },
-        { subscriptions: req.body.subscriptions }
+        {
+          subscriberId: req.params.subscriberId,
+          'subscriptions.strategyId': req.body.subscriptions[0].strategyId,
+        },
+        { subscriptions: req.body.subscriptions },
+        {
+          $set: {
+            'subscriptions.$.symbolFilter':
+              req.body.subscriptions[0].symbolFilter,
+          },
+        },
+        { new: true }
       );
       res
         .status(200)
@@ -101,12 +112,23 @@ router.put(
         }
       );
       const result = await Subscriber.findOneAndUpdate(
-        { subscriberId: req.params.subscriberId },
         {
-          copyStopLoss: req.body.copyStopLoss,
-          copyTakeProfit: req.body.copyTakeProfit,
-        }
+          subscriberId: req.params.subscriberId,
+          'subscriptions.strategyId': req.body.subscriptions[0].strategyId,
+        },
+        {
+          $set: {
+            'subscriptions.$.copyStopLoss':
+              req.body.subscriptions[0].copyStopLoss,
+            'subscriptions.$.copyTakeProfit':
+              req.body.subscriptions[0].copyTakeProfit,
+            'subscriptions.$.skipPendingOrders':
+              req.body.subscriptions[0].skipPendingOrders,
+          },
+        },
+        { new: true }
       );
+      console.log(result);
       res
         .status(200)
         .json({ msg: 'Successfully updated!', data: response.data });

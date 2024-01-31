@@ -20,14 +20,14 @@ const SubscriberSchema = new Schema(
     ],
     subscriptions: [
       {
+        strategyId: {
+          type: String,
+        },
         allowedSides: [
           {
             type: String,
           },
         ],
-        strategyId: {
-          type: String,
-        },
         symbolFilter: {
           included: [{ type: String }],
           excluded: [{ type: String }],
@@ -48,16 +48,20 @@ const SubscriberSchema = new Schema(
             from: { type: String },
           },
         ],
+        copyStopLoss: {
+          type: Boolean,
+          default: true,
+        },
+        copyTakeProfit: {
+          type: Boolean,
+          default: true,
+        },
+        skipPendingOrders: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
-    copyStopLoss: {
-      type: Boolean,
-      default: true,
-    },
-    copyTakeProfit: {
-      type: Boolean,
-      default: true,
-    },
   },
   { timestamps: true }
 );
