@@ -16,7 +16,7 @@ router.get('/all-accounts', auth([Role.User, Role.Admin]), async (req, res) => {
   try {
     const allAccounts = await Account.find();
     res.json(allAccounts);
-  } catch (err) { 
+  } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
   }
@@ -31,12 +31,9 @@ router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
       'account file=>>>>>>>>>>>>>>>>>>>>',
       page ? pagecount * (page - 1) : 0
     );
-    let count = 0;
-    if (req.user.role === 'Admin') {
-      count = await Account.find().count();
-    } else {
-      count = await Account.find().count({ user: req.user._id });
-    }
+    const count = await Account.find(
+      req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
+    ).count();
     const data = await Account.aggregate([
       {
         $match: req.user.role !== 'Admin' ? { user: req.user._id } : {},
@@ -682,7 +679,7 @@ router.delete(
           headers: { 'auth-token': process.env.METAAPI_TOKEN },
         }
       );
-      
+
       await Account.findOneAndDelete({ accountId: req.params.id });
       await Strategy.findOneAndDelete({ accountId: req.params.id });
       await Subscriber.findOneAndDelete({ subscriberId: req.params.id });

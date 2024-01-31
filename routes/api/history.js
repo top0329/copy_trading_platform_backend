@@ -14,7 +14,9 @@ router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
       'history 1 file=>>>>>>>>>>>>>>>>>>>>',
       page ? pagecount * (page - 1) : 0
     );
-    const count = await History.count();
+    const count = await History.find(
+      req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
+    ).count();
     const data = await History.aggregate([
       {
         $lookup: {
@@ -25,7 +27,8 @@ router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
         },
       },
       {
-        $match: { "account.user": req.user._id }
+        $match:
+          req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {},
       },
       {
         $project: {

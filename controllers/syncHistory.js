@@ -10,10 +10,10 @@ module.exports = async function syncHistory() {
   try {
     const date = new Date();
     const endTime = date.toISOString();
-    date.setSeconds(date.getSeconds() - 60*5);
+    date.setSeconds(date.getSeconds() - 60 * 5);
     const startTime = date.toISOString();
-    //console.log(startTime);
-    //console.log(endTime);
+    // console.log(startTime);
+    // console.log(endTime);
     const res = await axios.get(
       'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts',
       {
@@ -25,7 +25,7 @@ module.exports = async function syncHistory() {
       if (account[i].connectionStatus == 'CONNECTED') {
         const res = await axios.get(
           `https://metastats-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${account[i]._id}/historical-trades/${startTime}/${endTime}`,
-          // `https://metastats-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${account[i]._id}/historical-trades/2023-11-01 04:04:44.953/2023-12-30 04:04:44.953`,
+          // `https://metastats-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${account[i]._id}/historical-trades/2023-11-01 04:04:44.953/2024-2-3 04:04:44.953`,
           {
             headers: { 'auth-token': token },
           }

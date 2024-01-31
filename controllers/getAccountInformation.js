@@ -64,7 +64,6 @@ async function getAccountInformation(accountId) {
         upsert: true,
       }
     );
-    console.log(accountData)
     return accountData;
   } catch (e) {
     console.log('err in updating...');

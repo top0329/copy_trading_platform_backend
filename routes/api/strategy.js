@@ -33,7 +33,9 @@ router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
     page ? pagecount * (page - 1) : 0
   );
   try {
-    const count = await Strategy.count();
+    const count = await Strategy.find(
+      req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
+    ).count();
     const data = await Strategy.aggregate([
       {
         $lookup: {
