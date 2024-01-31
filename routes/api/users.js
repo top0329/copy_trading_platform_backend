@@ -265,11 +265,15 @@ router.post(
         }),
         { forceHttps: true }
       );
+
+      const _value = await SiteSetting.findOne({ key: "maxAccount" });
+
       user = new User({
         fullName,
         email,
         avatar,
         password,
+        maxAccount: _value.value
       });
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
