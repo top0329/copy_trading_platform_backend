@@ -8,12 +8,6 @@ const token = process.env.METAAPI_TOKEN;
 
 module.exports = async function syncHistory() {
   try {
-    const date = new Date();
-    const endTime = date.toISOString();
-    date.setSeconds(date.getSeconds() - 60 * 5);
-    const startTime = date.toISOString();
-    // console.log(startTime);
-    // console.log(endTime);
     const res = await axios.get(
       'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts',
       {
@@ -23,6 +17,16 @@ module.exports = async function syncHistory() {
     const account = res.data;
     for (let i = 0; i < account.length; i++) {
       if (account[i].connectionStatus == 'CONNECTED') {
+        const time = await axios.get(
+          `https://mt-client-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${account[i]._id}/server-time`,
+          {
+            headers: { 'auth-token': token },
+          }
+        );
+        const date = new Date(time.data.brokerTime);
+        const endTime = date.toISOString();
+        date.setSeconds(date.getSeconds() - 60 * 5);
+        const startTime = date.toISOString();
         const res = await axios.get(
           `https://metastats-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${account[i]._id}/historical-trades/${startTime}/${endTime}`,
           // `https://metastats-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${account[i]._id}/historical-trades/2023-11-01 04:04:44.953/2024-2-3 04:04:44.953`,
@@ -30,11 +34,9 @@ module.exports = async function syncHistory() {
             headers: { 'auth-token': token },
           }
         );
-
         if (res.data.trades.length === 0) continue;
 
         let data = [...res.data.trades];
-        // //console.log(data.length);
         data = data.map((item) => {
           let temp = { ...item };
           let _id = temp._id;
@@ -45,7 +47,6 @@ module.exports = async function syncHistory() {
           return temp;
         });
 
-        // //console.log(data);
         const result = await History.collection.insertMany(data);
       }
     }
