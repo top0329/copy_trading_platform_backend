@@ -56,15 +56,16 @@ router.post(
   }
 );
 
+// TODO: update general setting(update trade comment)
 router.put(
-  '/update-symbol-filter/:subscriberId',
+  '/update-general-setting/:subscriberId',
   auth([Role.User, Role.Admin]),
   async (req, res) => {
-    console.log(req.body)
+    const { name, subscriptions, commentData } = req.body;
     try {
       const response = await axios.put(
         `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/subscribers/${req.params.subscriberId}`,
-        req.body,
+        { name: name, subscriptions: subscriptions },
         {
           headers: {
             'auth-token': process.env.METAAPI_TOKEN,
@@ -77,11 +78,100 @@ router.put(
           subscriberId: req.params.subscriberId,
           'subscriptions.strategyId': req.body.subscriptions[0].strategyId,
         },
-        { subscriptions: req.body.subscriptions },
         {
           $set: {
-            'subscriptions.$.symbolFilter':
-              req.body.subscriptions[0].symbolFilter,
+            'subscriptions.$.closeOnly': req.body.subscriptions[0].closeOnly,
+          },
+        },
+        { new: true }
+      );
+      res
+        .status(200)
+        .json({ msg: 'Successfully updated!', data: response.data });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
+  }
+);
+
+router.put(
+  '/update-symbol-filter/:subscriberId',
+  auth([Role.User, Role.Admin]),
+  async (req, res) => {
+    try {
+      const subscriberData = await Subscriber.findOne({
+        subscriberId: req.params.subscriberId,
+        'subscriptions.strategyId': req.body.strategyId,
+      });
+      const {
+        strategyId,
+        allowedSides,
+        copyStopLoss,
+        copyTakeProfit,
+        skipPendingOrders,
+        riskLimits,
+        symbolMapping,
+        closeOnly,
+      } = subscriberData.subscriptions[0];
+      let willUpdateData = {};
+      if (
+        closeOnly === undefined ||
+        closeOnly === null ||
+        closeOnly === '' ||
+        closeOnly === 'undefined' ||
+        closeOnly === 'null'
+      )
+        willUpdateData = {
+          name: req.body.name,
+          subscriptions: [
+            {
+              strategyId: strategyId,
+              allowedSides: allowedSides,
+              copyStopLoss: copyStopLoss,
+              copyTakeProfit: copyTakeProfit,
+              skipPendingOrders: skipPendingOrders,
+              riskLimits: riskLimits,
+              symbolMapping: symbolMapping,
+              symbolFilter: req.body.symbolFilter,
+            },
+          ],
+        };
+      else
+        willUpdateData = {
+          name: req.body.name,
+          subscriptions: [
+            {
+              strategyId: strategyId,
+              allowedSides: allowedSides,
+              copyStopLoss: copyStopLoss,
+              copyTakeProfit: copyTakeProfit,
+              skipPendingOrders: skipPendingOrders,
+              riskLimits: riskLimits,
+              symbolMapping: symbolMapping,
+              symbolFilter: req.body.symbolFilter,
+              closeOnly: closeOnly,
+            },
+          ],
+        };
+      const response = await axios.put(
+        `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/subscribers/${req.params.subscriberId}`,
+        willUpdateData,
+        {
+          headers: {
+            'auth-token': process.env.METAAPI_TOKEN,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const result = await Subscriber.findOneAndUpdate(
+        {
+          subscriberId: req.params.subscriberId,
+          'subscriptions.strategyId': req.body.strategyId,
+        },
+        {
+          $set: {
+            'subscriptions.$.symbolFilter': req.body.symbolFilter,
           },
         },
         { new: true }
@@ -101,9 +191,61 @@ router.put(
   auth([Role.User, Role.Admin]),
   async (req, res) => {
     try {
+      const subscriberData = await Subscriber.findOne({
+        subscriberId: req.params.subscriberId,
+        'subscriptions.strategyId': req.body.strategyId,
+      });
+      const {
+        strategyId,
+        allowedSides,
+        riskLimits,
+        symbolMapping,
+        symbolFilter,
+        closeOnly,
+      } = subscriberData.subscriptions[0];
+      let willUpdateData = {};
+      if (
+        closeOnly === undefined ||
+        closeOnly === null ||
+        closeOnly === '' ||
+        closeOnly === 'undefined' ||
+        closeOnly === 'null'
+      )
+        willUpdateData = {
+          name: req.body.name,
+          subscriptions: [
+            {
+              strategyId: strategyId,
+              allowedSides: allowedSides,
+              copyStopLoss: req.body.copyStopLoss,
+              copyTakeProfit: req.body.copyTakeProfit,
+              skipPendingOrders: req.body.skipPendingOrders,
+              riskLimits: riskLimits,
+              symbolMapping: symbolMapping,
+              symbolFilter: symbolFilter,
+            },
+          ],
+        };
+      else
+        willUpdateData = {
+          name: req.body.name,
+          subscriptions: [
+            {
+              strategyId: strategyId,
+              allowedSides: allowedSides,
+              copyStopLoss: req.body.copyStopLoss,
+              copyTakeProfit: req.body.copyTakeProfit,
+              skipPendingOrders: req.body.skipPendingOrders,
+              riskLimits: riskLimits,
+              symbolMapping: symbolMapping,
+              symbolFilter: symbolFilter,
+              closeOnly: closeOnly,
+            },
+          ],
+        };
       const response = await axios.put(
         `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/subscribers/${req.params.subscriberId}`,
-        req.body,
+        willUpdateData,
         {
           headers: {
             'auth-token': process.env.METAAPI_TOKEN,
@@ -114,21 +256,21 @@ router.put(
       const result = await Subscriber.findOneAndUpdate(
         {
           subscriberId: req.params.subscriberId,
-          'subscriptions.strategyId': req.body.subscriptions[0].strategyId,
+          'subscriptions.strategyId': req.body.strategyId,
         },
         {
           $set: {
             'subscriptions.$.copyStopLoss':
-              req.body.subscriptions[0].copyStopLoss,
+              req.body.copyStopLoss,
             'subscriptions.$.copyTakeProfit':
-              req.body.subscriptions[0].copyTakeProfit,
+              req.body.copyTakeProfit,
             'subscriptions.$.skipPendingOrders':
-              req.body.subscriptions[0].skipPendingOrders,
+              req.body.skipPendingOrders,
           },
         },
         { new: true }
       );
-      console.log(result);
+      // console.log(result);
       res
         .status(200)
         .json({ msg: 'Successfully updated!', data: response.data });

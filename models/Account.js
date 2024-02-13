@@ -114,6 +114,10 @@ const AccountSchema = new Schema(
     baseCurrency: {
       type: String,
     },
+    comment: {
+      type: String,
+      maxlength: [16, 'Comment cannot exceed 16 characters'],
+    },
   },
   { timestamps: true }
 );

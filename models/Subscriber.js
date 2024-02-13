@@ -23,6 +23,9 @@ const SubscriberSchema = new Schema(
         strategyId: {
           type: String,
         },
+        closeOnly: {
+          type: String,
+        },
         allowedSides: [
           {
             type: String,
