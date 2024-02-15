@@ -41,7 +41,7 @@ router.get('/site-setting', auth([Role.Admin]), async (req, res) => {
  * @desc    Get user info from id
  * @access  ADMIN
  */
-router.get('/homepage-content', auth([Role.Admin]), async (req, res) => {
+router.get('/homepage-content', async (req, res) => {
   try {
     const contents = await HomePageContent.find().sort('-updatedAt');
     if (contents.length > 0) {
