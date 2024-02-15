@@ -3,7 +3,10 @@ const registerAccount = require('../../controllers/registerAccount');
 const Account = require('../../models/Account');
 const History = require('../../models/History');
 const Strategy = require('../../models/Strategy');
-const { getAccountInformation, _updateAccountInformation } = require('../../controllers/getAccountInformation');
+const {
+  getAccountInformation,
+  _updateAccountInformation,
+} = require('../../controllers/getAccountInformation');
 const auth = require('../../middleware/auth');
 const Role = require('../../config/role');
 const axios = require('axios');
@@ -12,120 +15,128 @@ const Subscriber = require('../../models/Subscriber');
 
 const router = express();
 
-router.get('/all-accounts', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const allAccounts = await Account.find();
-    res.json(allAccounts);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+router.get(
+  '/all-accounts',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    try {
+      const allAccounts = await Account.find();
+      res.json(allAccounts);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
   }
-});
+);
 /**
  * send account by req.user
  */
-router.get('/accounts', auth([Role.User, Role.Admin]), async (req, res) => {
-  const { page, pagecount, sort, type } = req.query;
-  try {
-    console.log(
-      'account file=>>>>>>>>>>>>>>>>>>>>',
-      page ? pagecount * (page - 1) : 0
-    );
-    const count = await Account.find(
-      req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
-    ).count();
-    const data = await Account.aggregate([
-      {
-        $match: req.user.role !== 'Admin' ? { user: req.user._id } : {},
-      },
-      {
-        $lookup: {
-          from: Trade.collection.name,
-          localField: 'accountId',
-          foreignField: 'accountId',
-          as: 'volume',
+router.get(
+  '/accounts',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    const { page, pagecount, sort, type } = req.query;
+    try {
+      console.log(
+        'account file=>>>>>>>>>>>>>>>>>>>>',
+        page ? pagecount * (page - 1) : 0
+      );
+      const count = await Account.find(
+        req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
+      ).count();
+      const data = await Account.aggregate([
+        {
+          $match: req.user.role !== 'Admin' ? { user: req.user._id } : {},
         },
-      },
-      {
-        $lookup: {
-          from: History.collection.name,
-          localField: 'accountId',
-          foreignField: 'accountId',
-          as: 'profit',
-        },
-      },
-      {
-        $addFields: {
-          volume: {
-            $sum: '$volume.volume',
-          },
-          count: {
-            $size: '$volume',
+        {
+          $lookup: {
+            from: Trade.collection.name,
+            localField: 'accountId',
+            foreignField: 'accountId',
+            as: 'volume',
           },
         },
-      },
-      {
-        $project: {
-          volume: 1,
-          count: 1,
-          accountId: 1,
-          'profit.type': 1,
-          'profit.profit': 1,
-          'profit.closeTime': 1,
-          login: 1,
-          name: 1,
-          platform: 1,
-          balance: 1,
-          equity: 1,
-          total: 1,
-          user: 1,
-          connectionStatus: 1,
+        {
+          $lookup: {
+            from: History.collection.name,
+            localField: 'accountId',
+            foreignField: 'accountId',
+            as: 'profit',
+          },
         },
-      },
-      {
-        $project: {
-          volume: 1,
-          accountId: 1,
-          count: 1,
-          profit: {
-            $filter: {
-              input: '$profit',
-              as: 'profit',
-              cond: {
-                $or: [
-                  { $eq: ['$$profit.type', 'DEAL_TYPE_BUY'] },
-                  { $eq: ['$$profit.type', 'DEAL_TYPE_SELL'] },
-                ],
-              },
+        {
+          $addFields: {
+            volume: {
+              $sum: '$volume.volume',
+            },
+            count: {
+              $size: '$volume',
             },
           },
-          login: 1,
-          name: 1,
-          platform: 1,
-          balance: 1,
-          equity: 1,
-          total: 1,
-          user: 1,
-          connectionStatus: 1,
         },
-      },
-      {
-        $addFields: {
-          total: {
-            $sum: '$profit.profit',
+        {
+          $project: {
+            volume: 1,
+            count: 1,
+            accountId: 1,
+            'profit.type': 1,
+            'profit.profit': 1,
+            'profit.closeTime': 1,
+            login: 1,
+            name: 1,
+            platform: 1,
+            balance: 1,
+            equity: 1,
+            total: 1,
+            user: 1,
+            connectionStatus: 1,
           },
         },
-      },
+        {
+          $project: {
+            volume: 1,
+            accountId: 1,
+            count: 1,
+            profit: {
+              $filter: {
+                input: '$profit',
+                as: 'profit',
+                cond: {
+                  $or: [
+                    { $eq: ['$$profit.type', 'DEAL_TYPE_BUY'] },
+                    { $eq: ['$$profit.type', 'DEAL_TYPE_SELL'] },
+                  ],
+                },
+              },
+            },
+            login: 1,
+            name: 1,
+            platform: 1,
+            balance: 1,
+            equity: 1,
+            total: 1,
+            user: 1,
+            connectionStatus: 1,
+          },
+        },
+        {
+          $addFields: {
+            total: {
+              $sum: '$profit.profit',
+            },
+          },
+        },
 
-      { $skip: page ? pagecount * (page - 1) : 0 },
-      { $limit: pagecount ? parseInt(pagecount) : 10 },
-    ]);
-    // console.log(data);
-    res.json({ data, count });
-  } catch (err) {
-    console.log(err);
+        { $skip: page ? pagecount * (page - 1) : 0 },
+        { $limit: pagecount ? parseInt(pagecount) : 10 },
+      ]);
+      // console.log(data);
+      res.json({ data, count });
+    } catch (err) {
+      console.log(err);
+    }
   }
-});
+);
 /**
  * @route api/account/accountInfo/:id
  * @desc  send accountInfo using accountId
@@ -355,95 +366,100 @@ router.get('/accountInfo/view/:id', async (req, res) => {
   }
 });
 
-router.get('/accounts/:id', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const data = await Account.aggregate([
-      {
-        $match: { accountId: req.params.id },
-      },
-      {
-        $lookup: {
-          from: Trade.collection.name,
-          localField: 'accountId',
-          foreignField: 'accountId',
-          as: 'volume',
+router.get(
+  '/accounts/:id',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    try {
+      const data = await Account.aggregate([
+        {
+          $match: { accountId: req.params.id },
         },
-      },
-      {
-        $lookup: {
-          from: History.collection.name,
-          localField: 'accountId',
-          foreignField: 'accountId',
-          as: 'profit',
-        },
-      },
-      {
-        $addFields: {
-          volume: {
-            $sum: '$volume.volume',
-          },
-          count: {
-            $size: '$volume',
+        {
+          $lookup: {
+            from: Trade.collection.name,
+            localField: 'accountId',
+            foreignField: 'accountId',
+            as: 'volume',
           },
         },
-      },
-      {
-        $project: {
-          volume: 1,
-          count: 1,
-          accountId: 1,
-          'profit.type': 1,
-          'profit.profit': 1,
-          'profit.closeTime': 1,
-          login: 1,
-          name: 1,
-          platform: 1,
-          balance: 1,
-          equity: 1,
-          total: 1,
-          updatedAt: 1,
+        {
+          $lookup: {
+            from: History.collection.name,
+            localField: 'accountId',
+            foreignField: 'accountId',
+            as: 'profit',
+          },
         },
-      },
-      {
-        $project: {
-          volume: 1,
-          accountId: 1,
-          count: 1,
-          profit: {
-            $filter: {
-              input: '$profit',
-              as: 'profit',
-              cond: {
-                $or: [
-                  { $eq: ['$$profit.type', 'DEAL_TYPE_BUY'] },
-                  { $eq: ['$$profit.type', 'DEAL_TYPE_SELL'] },
-                  { $eq: ['$$profit.type', 'DEAL_TYPE_BALANCE'] },
-                ],
-              },
+        {
+          $addFields: {
+            volume: {
+              $sum: '$volume.volume',
+            },
+            count: {
+              $size: '$volume',
             },
           },
-          login: 1,
-          name: 1,
-          platform: 1,
-          balance: 1,
-          equity: 1,
-          total: 1,
-          updatedAt: 1,
         },
-      },
-      {
-        $addFields: {
-          total: {
-            $sum: '$profit.profit',
+        {
+          $project: {
+            volume: 1,
+            count: 1,
+            accountId: 1,
+            'profit.type': 1,
+            'profit.profit': 1,
+            'profit.closeTime': 1,
+            login: 1,
+            name: 1,
+            platform: 1,
+            balance: 1,
+            equity: 1,
+            total: 1,
+            updatedAt: 1,
           },
         },
-      },
-    ]);
-    res.json(data[0]);
-  } catch (err) {
-    console.log(err);
+        {
+          $project: {
+            volume: 1,
+            accountId: 1,
+            count: 1,
+            profit: {
+              $filter: {
+                input: '$profit',
+                as: 'profit',
+                cond: {
+                  $or: [
+                    { $eq: ['$$profit.type', 'DEAL_TYPE_BUY'] },
+                    { $eq: ['$$profit.type', 'DEAL_TYPE_SELL'] },
+                    { $eq: ['$$profit.type', 'DEAL_TYPE_BALANCE'] },
+                  ],
+                },
+              },
+            },
+            login: 1,
+            name: 1,
+            platform: 1,
+            balance: 1,
+            equity: 1,
+            total: 1,
+            updatedAt: 1,
+          },
+        },
+        {
+          $addFields: {
+            total: {
+              $sum: '$profit.profit',
+            },
+          },
+        },
+      ]);
+      res.json(data[0]);
+    } catch (err) {
+      console.log(err);
+    }
   }
-});
+);
+
 //for view users
 router.get('/accounts/view/:id', async (req, res) => {
   try {
@@ -536,59 +552,72 @@ router.get('/accounts/view/:id', async (req, res) => {
   }
 });
 
-router.get('/info', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const response = await axios.get(
-      'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts',
-      {
-        headers: { 'auth-token': process.env.METAAPI_TOKEN },
-      }
-    );
+router.get(
+  '/info',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    try {
+      const response = await axios.get(
+        'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts',
+        {
+          headers: { 'auth-token': process.env.METAAPI_TOKEN },
+        }
+      );
 
-    // console.log(response.data[0]);
-    res.json(response.data);
-  } catch (err) {
-    console.log(err);
-    res.json(err);
+      // console.log(response.data[0]);
+      res.json(response.data);
+    } catch (err) {
+      console.log(err);
+      res.json(err);
+    }
   }
-});
+);
 
-router.get('/my-accounts', auth([Role.User, Role.Admin]), async (req, res) => {
-  const { page, pagecount, sort, type } = req.query;
+router.get(
+  '/my-accounts',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    const { page, pagecount, sort, type } = req.query;
 
-  try {
-    const count = await Account.count();
-    const data = await Account.find(
-      req.user.role !== 'Admin' ? { user: req.user._id } : {}
-    )
-      .skip(page ? pagecount * (page - 1) : 0)
-      .limit(pagecount ? parseInt(pagecount) : 10);
+    try {
+      const count = await Account.count();
+      const data = await Account.find(
+        req.user.role !== 'Admin' ? { user: req.user._id } : {}
+      )
+        .skip(page ? pagecount * (page - 1) : 0)
+        .limit(pagecount ? parseInt(pagecount) : 10);
 
-    //console.log(data);
-    res.json({ data, count });
-  } catch (err) {
-    console.log(err);
+      //console.log(data);
+      res.json({ data, count });
+    } catch (err) {
+      console.log(err);
+    }
   }
-});
+);
 
-router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const account = await Account.findOne({
-      accountId: req.params.id,
-    });
-    res.json(account);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+router.get(
+  '/:id',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    try {
+      const account = await Account.findOne({
+        accountId: req.params.id,
+      });
+      res.json(account);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
   }
-});
+);
 
 router.post(
   '/register-account',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
-      const { login, password, name, server, platform, copyFactoryRoles } = req.body;
+      const { login, password, name, server, platform, copyFactoryRoles } =
+        req.body;
       const user = req.user;
       const data = await registerAccount(
         login,
@@ -610,7 +639,7 @@ router.post(
 
 router.put(
   '/update-all-accounts-information',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       let data = await Account.find();
@@ -627,7 +656,7 @@ router.put(
 
 router.put(
   '/update-account-information/:id',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const accountData = await getAccountInformation(req.params.id);
@@ -641,7 +670,7 @@ router.put(
 
 router.put(
   '/update-account-name/:id',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const { accountName, server } = req.body;
@@ -670,7 +699,7 @@ router.put(
 
 router.delete(
   '/delete/:id',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const response = await axios.delete(

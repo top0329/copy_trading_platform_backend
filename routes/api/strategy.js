@@ -15,7 +15,7 @@ const router = express();
 //Get Strategy List from MetaAPI
 router.get(
   '/strategy-list',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     const data = await getStrategyID();
     const result = data.data;
@@ -23,59 +23,59 @@ router.get(
   }
 );
 
-router.get('/strategies', auth([Role.User, Role.Admin]), async (req, res) => {
-  console.log(req.user._id);
-
-  const { page, pagecount, sort, type } = req.query;
-  const _user = req.user._id;
-  console.log(
-    'strategy 1 file=>>>>>>>>>>>>>>>>>>>>',
-    page ? pagecount * (page - 1) : 0
-  );
-  try {
-    const count = await Strategy.find(
-      req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
-    ).count();
-    const data = await Strategy.aggregate([
-      {
-        $lookup: {
-          from: Account.collection.name,
-          localField: 'accountId',
-          foreignField: 'accountId',
-          as: 'account',
+router.get(
+  '/strategies',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    const { page, pagecount, sort, type } = req.query;
+    const _user = req.user._id;
+    console.log(
+      'strategy 1 file=>>>>>>>>>>>>>>>>>>>>',
+      page ? pagecount * (page - 1) : 0
+    );
+    try {
+      const count = await Strategy.find(
+        req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
+      ).count();
+      const data = await Strategy.aggregate([
+        {
+          $lookup: {
+            from: Account.collection.name,
+            localField: 'accountId',
+            foreignField: 'accountId',
+            as: 'account',
+          },
         },
-      },
-      {
-        $match:
-          req.user.role !== 'Admin'
-            ? { proposers: { $elemMatch: { $eq: req.user._id } } }
-            : {},
-      },
-      {
-        $project: {
-          'account.name': 1,
-          'account.login': 1,
-          strategyId: 1,
-          accountId: 1,
-          name: 1,
-          live: 1,
-          description: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          proposers: 1,
+        {
+          $match:
+            req.user.role !== 'Admin'
+              ? { proposers: { $elemMatch: { $eq: req.user._id } } }
+              : {},
         },
-      },
-      // {$sort: ...},
-      { $skip: page ? pagecount * (page - 1) : 0 },
-      { $limit: pagecount ? parseInt(pagecount) : 10 },
-    ]);
-
-    console.log(data);
-    res.json({ data, count });
-  } catch (err) {
-    console.log(err);
+        {
+          $project: {
+            'account.name': 1,
+            'account.login': 1,
+            strategyId: 1,
+            accountId: 1,
+            name: 1,
+            live: 1,
+            description: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            proposers: 1,
+          },
+        },
+        // {$sort: ...},
+        { $skip: page ? pagecount * (page - 1) : 0 },
+        { $limit: pagecount ? parseInt(pagecount) : 10 },
+      ]);
+      res.json({ data, count });
+    } catch (err) {
+      console.log(err);
+    }
   }
-});
+);
 
 router.get('/strategies-subscribers/:id', async (req, res) => {
   const { page, pagecount, sort, type } = req.query;
@@ -176,84 +176,133 @@ router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
 });
 
 //funtion that register stretegy with Signal Provider ID. Here StrategyName and strategyDescription is just for string and get from customer. If not want, can give standard name and description.
+router.post('/register-strategy', auth([Role.Admin]), async (req, res) => {
+  const { providerID, StrategyName, strategyDescription } = req.body;
+  const data = await registerStrategy(
+    providerID,
+    StrategyName,
+    strategyDescription
+  );
+  const result = data;
+  res.json({ RegisterStrategy: result });
+});
+
 router.post(
-  '/register-strategy',
-  auth([Role.User, Role.Admin]),
+  '/follow',
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
-    const { providerID, StrategyName, strategyDescription } = req.body;
-    const data = await registerStrategy(
-      providerID,
-      StrategyName,
-      strategyDescription
-    );
-    const result = data;
-    res.json({ RegisterStrategy: result });
-  }
-);
+    try {
+      const response = await Strategy.findOne({ accountId: req.body.id });
+      // return console.log(response.proposers)
+      if (response.proposers.indexOf(req.user._id) !== -1) {
+        return res.json({ status: 'OK', msg: 'Already followed' });
+      } else {
+        const response = await Strategy.findOneAndUpdate(
+          { accountId: req.body.id },
+          { $push: { proposers: req.user._id } }
+        );
+        //send message for follow...
+        const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
+        const content = `
+        <div
+          style="
+            margin-top: 20px;
+            margin-bottom: 15px;
+            margin-left: 20px;
+            margin-right: 20px;
+            padding-left: 32px;
+            padding-right: 32px;
+            padding-top: 32px;
+            padding-bottom: 54px;
+            font-size: 24px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+          "
+        >
+          <p style="font-weight: 1000; margin-bottom: 0px; margin-top: 0px">
+            ${req.user.fullName},
+          </p>
+          <br />
 
-router.post('/follow', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const response = await Strategy.findOne({ accountId: req.body.id });
-    // return console.log(response.proposers)
-    if (response.proposers.indexOf(req.user._id) !== -1) {
-      return res.json({ status: 'OK', msg: 'Already followed' });
-    } else {
-      const response = await Strategy.findOneAndUpdate(
-        { accountId: req.body.id },
-        { $push: { proposers: req.user._id } }
-      );
-      //send message for follow...
-      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
-      const content = `
-        <div style="text-align: center; margin: 20px; font-size: 24px;">
-          <p style="font-weight: 1000;">${req.user.fullName}</p>
+          <p style="font-size: 20px; margin-bottom: 0px; margin-top: 5px">
+            You have just had a new signup for
+            <span style="font-weight: 900">${response.name}</span>
+          </p>
+          <br />
 
-          <p>You have just had a new signup for <span style="font-weight: 900;">${response.name}</span></p>
+          <p style="font-size: 20px; margin-bottom: 10px; margin-top: 5px">
+            Access Rights: <span style="font-weight: 900">Trade Copier</span>
+          </p>
+          <p style="font-size: 20px; margin-bottom: 10px; margin-top: 5px">
+            Non billable access
+          </p>
+          <p style="font-size: 20px; margin-bottom: 10px; margin-top: 5px">
+            Amount Received: <span style="font-weight: 900">0</span>
+          </p>
 
-          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Access Result: <span style="font-weight: 900;">Trade Copier</span></p>
-          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Non billable access</p>
-          <p style="line-height: 0.5; margin-top: 30px; font-size: 20px;">Amount Received: <span style="font-weight: 900;">0</span></p>
+          <p style="margin-top: 40px; margin-bottom: 10px; font-size: 20px">
+            Name: <span style="font-weight: 900">${req.user.fullName}</span>
+          </p>
+          <p style="font-size: 20px; margin-bottom: 10px; margin-top: 5px">
+            Email:
+            <span style="font-weight: 900; color: #0088ff; text-decoration: underline"
+              >${req.user.email}</span
+            >
+          </p>
 
-          <p style="line-height: 0; margin-top: 50px; font-size: 20px;">Name: <span style="font-weight: 900;">${req.user.fullName}</span></p>
-          <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
+          <p style="margin-bottom: 30px; font-size: 20px; margin-top: 30px">
+            A full details can be found in your signal follower section.
+          </p>
 
-          <p style="line-height: 0.7; margin-bottom: 30px; font-size: 20px; margin-top: 40px;">A full details can be found in your signal follower section.</p>
-
-          <a style="
-              background-color: rgb(28, 108, 253);
-              padding: 10px 20px;
+          <a
+            style="
+              background-color: #0088ff;
+              padding: 15px 20px;
               color: white;
               border: none;
               border-radius: 10px;
-              text-decoration: none;"
-              href="${baseUrl}/signal-followers">
-              My followers
+              text-decoration: none;
+              display: inline-block;
+              text-align: center;
+              margin: 0 30%;
+            "
+            href="${baseUrl}/signal-followers"
+          >
+            My followers
           </a>
+        </div>
+      `;
+        sendMail(process.env.EMAIL_USERNAME, content);
 
-        </div>`;
-      sendMail(process.env.EMAIL_USERNAME, content);
-
-      return res.json({ status: 'OK', msg: 'Successfully followed' });
+        return res.json({ status: 'OK', msg: 'Successfully followed' });
+      }
+    } catch (err) {
+      console.log(err);
+      res.json({ status: 'ERR' });
     }
-  } catch (err) {
-    console.log(err);
-    res.json({ status: 'ERR' });
   }
-});
+);
 
-router.put('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
-  try {
-    const response = await Strategy.findByIdAndUpdate(req.params.id, req.body);
-    res.json(response);
-  } catch (err) {
-    console.log(err);
-    res.status(505).json('failed');
+router.put(
+  '/:id',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    try {
+      const response = await Strategy.findByIdAndUpdate(
+        req.params.id,
+        req.body
+      );
+      res.json(response);
+    } catch (err) {
+      console.log(err);
+      res.status(505).json('failed');
+    }
   }
-});
+);
 
 router.delete(
   '/:strategyId',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const response = await axios.delete(

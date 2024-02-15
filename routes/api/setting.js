@@ -37,6 +37,75 @@ router.get('/site-setting', auth([Role.Admin]), async (req, res) => {
 });
 
 /**
+ * @route   GET api/settings/homepage-content
+ * @desc    Get user info from id
+ * @access  ADMIN
+ */
+router.get('/homepage-content', auth([Role.Admin]), async (req, res) => {
+  try {
+    const contents = await HomePageContent.find().sort('-updatedAt');
+    if (contents.length > 0) {
+      res.json(contents[0]);
+    } else {
+      res.json({ title: '', body: '' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.json({ status: 'ERR' });
+  }
+});
+
+/**
+ * @route GET api/settings/brokers
+ * @description
+ * @access ADMIN
+ */
+router.get(
+  '/brokers',
+  auth([Role.Admin, Role.Provider, Role.User]),
+  async (req, res) => {
+    try {
+      const data = await Broker.find().sort({ broker: 1 });
+      res.json({ status: 'OK', data: data });
+    } catch (e) {
+      console.log(e);
+      res.json({ status: 'ERR' });
+    }
+  }
+);
+
+/**
+ * @route POST api/settings/brokers
+ * @description
+ * @access ADMIN
+ */
+router.post('/brokers', auth([Role.Admin]), async (req, res) => {
+  console.log('asdfasdf');
+  try {
+    const data = await new Broker({ broker: req.body.broker }).save();
+    res.json({ status: 'OK', data: data });
+  } catch (e) {
+    console.log(e);
+    res.json({ status: 'ERR' });
+  }
+});
+
+/**
+ * @route POST api/settings/homepage-content
+ * @description
+ * @access ADMIN
+ */
+router.post('/homepage-content', auth([Role.Admin]), async (req, res) => {
+  try {
+    const data = await new HomePageContent(req.body).save();
+    res.json({ status: 'OK', data: data });
+  } catch (e) {
+    console.log(e);
+    res.json({ status: 'ERR' });
+  }
+});
+
+/**
  * @route   PUT api/settings/site-setting
  * @desc    Get user info from id
  * @access  ADMIN
@@ -79,55 +148,6 @@ router.put('/site-setting', auth([Role.Admin]), async (req, res) => {
 });
 
 /**
- * @route   GET api/settings/homepage-content
- * @desc    Get user info from id
- * @access  ADMIN
- */
-router.get('/homepage-content', async (req, res) => {
-  try {
-    const contents = await HomePageContent.find().sort('-updatedAt');
-    if (contents.length > 0) {
-      res.json(contents[0]);
-    } else {
-      res.json({ title: '', body: '' });
-    }
-  } catch (err) {
-    console.log(err);
-    res.json({ status: 'ERR' });
-  }
-});
-
-/**
- * @route POST api/settings/brokers
- * @description
- * @access ADMIN
- */
-router.post('/brokers', auth([Role.Admin]), async (req, res) => {
-  console.log('asdfasdf');
-  try {
-    const data = await new Broker({ broker: req.body.broker }).save();
-    res.json({ status: 'OK', data: data });
-  } catch (e) {
-    console.log(e);
-    res.json({ status: 'ERR' });
-  }
-});
-/**
- * @route POST api/settings/homepage-content
- * @description
- * @access ADMIN
- */
-router.post('/homepage-content', auth([Role.Admin]), async (req, res) => {
-  try {
-    const data = await new HomePageContent(req.body).save();
-    res.json({ status: 'OK', data: data });
-  } catch (e) {
-    console.log(e);
-    res.json({ status: 'ERR' });
-  }
-});
-
-/**
  * @route PUT api/settings/homepage-content
  * @description
  * @access ADMIN
@@ -154,21 +174,6 @@ router.delete('/homepage-content/:id', auth([Role.Admin]), async (req, res) => {
   } catch (e) {
     console.log(e);
     res.json({ status: 'ERR' });
-  }
-});
-
-/**
- * @route GET api/settings/brokers
- * @description
- * @access ADMIN
- */
-router.get("/brokers", auth([Role.Admin, Role.User]), async (req, res) => {
-  try {
-    const data = await Broker.find().sort({ broker: 1 });
-    res.json({ status: "OK", data: data})
-  } catch (e) {
-    console.log(e);
-    res.json({ status: "ERR" })
   }
 });
 

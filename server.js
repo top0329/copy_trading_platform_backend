@@ -4,9 +4,17 @@ const path = require('path');
 const cors = require('cors');
 const syncHistory = require('./controllers/syncHistory');
 const syncTrade = require('./controllers/syncTrade');
+const Notification = require('./models/Notification');
+const User = require('./models/User');
 
 const app = express();
-
+const http = require('http').Server(app);
+const io = require('socket.io')(http, {
+  cors: {
+    origin: '*',
+    credentials: true,
+  },
+});
 // Connect Database
 connectDB();
 
@@ -36,7 +44,57 @@ app.use('/api/settings', require('./routes/api/setting'));
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '45.8.22.219';
 
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+io.on('connection', (socket) => {
+  console.log('Client connected!');
+  socket.on('disconnect', () => {
+    console.log('Client disconnected!');
+  });
+
+  socket.on('message', async (msg) => {
+    try {
+      if (msg.type === 'provider-request') {
+        console.log(msg);
+        const result = await User.findById(msg.payload.user);
+        if (!result) {
+          socket.emit('result', {
+            type: 'error',
+            payload: { msg: 'User not found!' },
+          });
+        } else if (result.isPending === true) {
+          socket.emit('result', {
+            type: 'error',
+            payload: { msg: 'You are already pending!' },
+          });
+        } else {
+          result.isPending = true;
+          result.save();
+          const data = await Notification.findOne({ user: msg.payload.user });
+          if (!data) {
+            const data = new Notification();
+            data.user = msg.payload.user;
+            data.isNotViewed = true;
+            data.save();
+          } else {
+            data.isNotViewed = true;
+            data.save();
+          }
+          socket.emit('result', {
+            type: 'success',
+            payload: { msg: 'Provider request sent!' },
+          });
+          socket.broadcast.emit('alert', {
+            type: 'notification',
+            payload: { user: msg.payload.user, isNotViewed: true },
+          });
+        }
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  });
+});
+
+http.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 // app.listen(PORT, HOST, () => console.log(`Server started on port ${PORT} and on host ${HOST}`));
 
 setInterval(() => {

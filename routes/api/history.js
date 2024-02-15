@@ -6,63 +6,67 @@ const Account = require('../../models/Account');
 
 const router = express();
 
-router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
-  const { page, pagecount, sort, type } = req.query;
+router.get(
+  '/',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    const { page, pagecount, sort, type } = req.query;
 
-  try {
-    console.log(
-      'history 1 file=>>>>>>>>>>>>>>>>>>>>',
-      page ? pagecount * (page - 1) : 0
-    );
-    const count = await History.find(
-      req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
-    ).count();
-    const data = await History.aggregate([
-      {
-        $lookup: {
-          from: Account.collection.name,
-          localField: 'accountId',
-          foreignField: 'accountId',
-          as: 'account',
+    try {
+      console.log(
+        'history 1 file=>>>>>>>>>>>>>>>>>>>>',
+        page ? pagecount * (page - 1) : 0
+      );
+      const count = await History.find(
+        req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {}
+      ).count();
+      const data = await History.aggregate([
+        {
+          $lookup: {
+            from: Account.collection.name,
+            localField: 'accountId',
+            foreignField: 'accountId',
+            as: 'account',
+          },
         },
-      },
-      {
-        $match:
-          req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {},
-      },
-      {
-        $project: {
-          'account.name': 1,
-          'account.login': 1,
-          id: 1,
-          type: 1,
-          volume: 1,
-          profit: 1,
-          success: 1,
-          openTime: 1,
-          closeTime: 1,
-          openPrice: 1,
-          closePrice: 1,
-          symbol: 1,
-          gain: 1,
-          openPrice: 1,
-          durationInMinutes: 1,
-          marketValue: 1,
-          positionId: 1,
-          riskInBalancePercent: 1,
-          riskInPips: 1,
+        {
+          $match:
+            req.user.role !== 'Admin' ? { 'account.user': req.user._id } : {},
         },
-      },
-      // {$sort: ...},
-      { $skip: page ? pagecount * (page - 1) : 0 },
-      { $limit: pagecount ? parseInt(pagecount) : 10 },
-    ]);
+        {
+          $project: {
+            'account.name': 1,
+            'account.login': 1,
+            id: 1,
+            type: 1,
+            volume: 1,
+            profit: 1,
+            success: 1,
+            openTime: 1,
+            closeTime: 1,
+            openPrice: 1,
+            closePrice: 1,
+            symbol: 1,
+            gain: 1,
+            openPrice: 1,
+            durationInMinutes: 1,
+            marketValue: 1,
+            positionId: 1,
+            riskInBalancePercent: 1,
+            riskInPips: 1,
+          },
+        },
+        // {$sort: ...},
+        { $skip: page ? pagecount * (page - 1) : 0 },
+        { $limit: pagecount ? parseInt(pagecount) : 10 },
+      ]);
 
-    res.json({ data, count });
-  } catch (err) {
-    console.log(err);
+      res.json({ data, count });
+    } catch (err) {
+      console.log(err);
+    }
   }
-});
+);
 
 router.get('/:id', async (req, res) => {
   const { id } = req.params;

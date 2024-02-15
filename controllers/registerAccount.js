@@ -1,6 +1,7 @@
 const axios = require('axios');
 const dotenv = require('dotenv');
 const Account = require('../models/Account');
+const User = require('../models/User');
 
 dotenv.config();
 
@@ -29,7 +30,8 @@ module.exports = async function registerAccount(
 ) {
   try {
     const transactionId = generateTransactionId();
-    let url = 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts';
+    let url =
+      'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts';
     const data = JSON.stringify({
       quoteStreamingIntervalInSeconds: 0.5,
       region: 'new-york',
@@ -51,26 +53,73 @@ module.exports = async function registerAccount(
       },
     };
     const res = await axios.post(url, data, config);
-    const newAccount = new Account({
-      user: user.id,
-      accountId: res.data.id,
-      state: res.data.state,
-      quoteStreamingIntervalInSeconds: 0.5,
-      region: 'new-york',
-      login: login,
-      password: password,
-      name: name,
-      server: server,
-      magic: 0,
-      copyFactoryRoles: copyFactoryRoles,
-      platform: platform,
-      resourceSlots: 2,
-      metastatsApiEnabled: true,
-    });
-    await newAccount.save();
+    if (user.role === 'User') {
+      const newAccount = new Account({
+        user: user.id,
+        accountId: res.data.id,
+        state: res.data.state,
+        quoteStreamingIntervalInSeconds: 0.5,
+        region: 'new-york',
+        login: login,
+        password: password,
+        name: name,
+        server: server,
+        magic: 0,
+        copyFactoryRoles: ['SUBSCRIBER'],
+        platform: platform,
+        resourceSlots: 2,
+        metastatsApiEnabled: true,
+      });
+      await newAccount.save();
+    }
+    if (user.role === 'Provider') {
+      const userData = await User.findById(user._id);
+      if (userData.providerAccountLimit > 0) {
+        const newAccount = new Account({
+          user: user.id,
+          accountId: res.data.id,
+          state: res.data.state,
+          quoteStreamingIntervalInSeconds: 0.5,
+          region: 'new-york',
+          login: login,
+          password: password,
+          name: name,
+          server: server,
+          magic: 0,
+          copyFactoryRoles: copyFactoryRoles,
+          platform: platform,
+          resourceSlots: 2,
+          metastatsApiEnabled: true,
+        });
+        await newAccount.save();
+        await User.findByIdAndUpdate(user._id, { providerAccountLimit: userData.providerAccountLimit - 1 });
+      } else {
+        return new Error('Provider account limit reached');
+      }
+    }
+    if (user.role === 'Admin') {
+      const newAccount = new Account({
+        user: user.id,
+        accountId: res.data.id,
+        state: res.data.state,
+        quoteStreamingIntervalInSeconds: 0.5,
+        region: 'new-york',
+        login: login,
+        password: password,
+        name: name,
+        server: server,
+        magic: 0,
+        copyFactoryRoles: copyFactoryRoles,
+        platform: platform,
+        resourceSlots: 2,
+        metastatsApiEnabled: true,
+      });
+      await newAccount.save();
+    }
+
     return res.data;
   } catch (err) {
     console.log(err);
-    return new Error("failed");
+    return new Error('failed');
   }
 };

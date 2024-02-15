@@ -6,7 +6,7 @@ const Role = require('../../config/role');
 
 const router = express();
 
-router.get('/', auth([Role.User, Role.Admin]), async (req, res) => {
+router.get('/', auth([Role.User, Role.Provider, Role.Admin]), async (req, res) => {
   const { page, pagecount, sort, type } = req.query;
   console.log(
     'trade 1 file=>>>>>>>>>>>>>>>>>>>>',

@@ -43,6 +43,14 @@ const UserSchema = new Schema(
       type: Number,
       default: 10,
     },
+    isPending: {
+      type: Boolean,
+      default: false,
+    },
+    providerAccountLimit: {
+      type: Number,
+      deffault: 0,
+    },
   },
   { timestamps: true }
 );

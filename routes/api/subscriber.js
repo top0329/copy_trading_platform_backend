@@ -11,7 +11,7 @@ const router = express();
 // Get Strategy List from MetaAPI
 router.get(
   '/subscriber-list',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     let data = await getSubscriberList();
     const result = data.data;
@@ -19,17 +19,17 @@ router.get(
   }
 );
 
-router.get('/subscribers', auth([Role.User, Role.Admin]), async (req, res) => {
+router.get('/subscribers', auth([Role.User, Role.Provider, Role.Admin]), async (req, res) => {
   let data = await Subscriber.find();
   res.json(data);
 });
 
-router.get('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
+router.get('/:id', auth([Role.User, Role.Provider, Role.Admin]), async (req, res) => {
   let data = await Subscriber.findOne({ subscriberId: req.params.id });
   res.json(data);
 });
 
-router.get('/strategy/:id', auth([Role.User, Role.Admin]), async (req, res) => {
+router.get('/strategy/:id', auth([Role.User, Role.Provider, Role.Admin]), async (req, res) => {
   let data = await Subscriber.find({ strategyIds: req.params.id });
   res.json(data);
 });
@@ -37,7 +37,7 @@ router.get('/strategy/:id', auth([Role.User, Role.Admin]), async (req, res) => {
 // function that register for receive signals with strategy ID. can be several signals. Must give Subscriber name for update.
 router.post(
   '/update-signals',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const { SubscriberName, SubscriberID, strategyIDs } = req.body;
@@ -59,7 +59,7 @@ router.post(
 // TODO: update general setting(update trade comment)
 router.put(
   '/update-general-setting/:subscriberId',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     const { name, subscriptions, commentData } = req.body;
     try {
@@ -97,7 +97,7 @@ router.put(
 
 router.put(
   '/update-symbol-filter/:subscriberId',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const subscriberData = await Subscriber.findOne({
@@ -188,7 +188,7 @@ router.put(
 
 router.put(
   '/update-stops-limits/:subscriberId',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const subscriberData = await Subscriber.findOne({
@@ -281,7 +281,7 @@ router.put(
   }
 );
 
-router.delete('/:id', auth([Role.User, Role.Admin]), async (req, res) => {
+router.delete('/:id', auth([Role.User, Role.Provider, Role.Admin]), async (req, res) => {
   try {
     const response = await axios.delete(
       `https://copyfactory-api-v1.new-york.agiliumtrade.ai/users/current/configuration/subscribers/${req.params.id}`,

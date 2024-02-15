@@ -29,30 +29,11 @@ router.get('/detail/:id', auth([Role.Admin]), async (req, res) => {
     if (user) {
       res.json({ status: 'OK', data: user });
     } else {
-      res.json({ status: "EX", data: 'No user' })
+      res.json({ status: 'EX', data: 'No user' });
     }
   } catch (err) {
-    console.log(err)
-    res.json({ status: "ERR" })
-  }
-});
-
-/**
- * @route   PUT api/users/max-account/:id
- * @desc    Update user info from id
- * @access  Admin
- */
-router.put('/max-account/:id', auth([Role.Admin]), async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(req.params.id, { maxAccount: req.body.maxAccount });
-    if (user) {
-      res.json({ status: 'OK' });
-    } else {
-      res.json({ status: "EX", data: 'No user' })
-    }
-  } catch (err) {
-    console.log(err)
-    res.json({ status: "ERR" })
+    console.log(err);
+    res.json({ status: 'ERR' });
   }
 });
 
@@ -95,6 +76,8 @@ router.get('/all', auth([Role.Admin]), async (req, res) => {
           email: 1,
           fullName: 1,
           maxAccount: 1,
+          isPending: 1,
+          providerAccountLimit: 1,
           accounts: { $size: '$accounts' },
           strategies: { $size: '$strategies' },
           subscribers: { $size: '$subscribers' },
@@ -113,15 +96,19 @@ router.get('/all', auth([Role.Admin]), async (req, res) => {
 // @route    GET api/users/me
 // @desc     Get user data
 // @access   Public
-router.get('/me', auth([Role.User, Role.Admin]), async (req, res) => {
-  const user = await User.findOne({ _id: req.user.id });
+router.get(
+  '/me',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    const user = await User.findOne({ _id: req.user.id });
 
-  if (!user) {
-    res.status(405).json({ msg: 'No user' });
-  } else {
-    res.json(user);
+    if (!user) {
+      res.status(405).json({ msg: 'No user' });
+    } else {
+      res.json(user);
+    }
   }
-});
+);
 
 // @route    GET api/users/verify-email/:token
 // @desc     Authenticate user & get token
@@ -180,11 +167,10 @@ router.get('/reset-password/:email', async (req, res) => {
   try {
     const { email } = req.params;
     const token = jwt.sign({ email: email }, config.get('jwtSecret'), {
-      expiresIn: '3m',
+      expiresIn: '10m',
     });
     const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
-    const content =
-      `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;">
+    const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;">
           <h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1>
           <p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To Our Website</p>
           <p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your reset-password verification link. Please
@@ -203,8 +189,11 @@ router.get('/reset-password/:email', async (req, res) => {
   }
 });
 
-router.post("/contact", auth([Role.User, Role.Admin]), async(req, res) => {
-  const content = `
+router.post(
+  '/contact',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    const content = `
     <div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;">
       <h1 style="font-size: 27px; color: #333; margin-bottom: 20px;">${req.body.subject}</h1>
       <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
@@ -217,9 +206,10 @@ router.post("/contact", auth([Role.User, Role.Admin]), async(req, res) => {
       <p style="line-height: 0.7; font-size: 20px;">Email: <span style="font-weight: 900; color: blue; text-decoration: underline;">${req.user.email}</span></p>
 
     </div>`;
-  sendMail(process.env.EMAIL_USERNAME, content);
-  res.json({status: 'OK'})
-})
+    sendMail(process.env.EMAIL_USERNAME, content);
+    res.json({ status: 'OK' });
+  }
+);
 
 // @route    POST api/users
 // @desc     Register user
@@ -240,12 +230,12 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { value } = await SiteSetting.findOne({ key: "userRegistration" });
-    
-    if ( value === "false" ) {
+    const { value } = await SiteSetting.findOne({ key: 'userRegistration' });
+
+    if (value === 'false') {
       return res
-          .status(400)
-          .json({ errors: [{ msg: 'Not allowed user registration' }] });
+        .status(400)
+        .json({ errors: [{ msg: 'Not allowed user registration' }] });
     }
 
     const { fullName, email, password } = req.body;
@@ -266,14 +256,14 @@ router.post(
         { forceHttps: true }
       );
 
-      const _value = await SiteSetting.findOne({ key: "maxAccount" });
+      const _value = await SiteSetting.findOne({ key: 'maxAccount' });
 
       user = new User({
         fullName,
         email,
         avatar,
         password,
-        maxAccount: _value.value
+        maxAccount: _value.value,
       });
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
@@ -440,32 +430,80 @@ router.post('/reset-password', async (req, res) => {
 // @route    PUT api/users/me
 // @desc     Update user data
 // @access   Private
-router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
+router.put(
+  '/me',
+  auth([Role.User, Role.Provider, Role.Admin]),
+  async (req, res) => {
+    try {
+      const oldUser = await User.findOne({ _id: req.user.id });
+      if (oldUser.email === req.body.email) {
+        oldUser.fullName = req.body.fullName;
+        const user = await oldUser.save();
+        return res.json(user);
+      } else {
+        oldUser.fullName = req.body.fullName;
+        oldUser.email = req.body.email;
+        oldUser.emailVerified = false;
+        oldUser.emailVerifyToken = crypto.randomBytes(30).toString('hex');
+        oldUser.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
+        const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
+        const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To TradeCopierSignal Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/email-verify-update/${oldUser.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
+        sendMail(oldUser.email, content);
+        console.log(oldUser.email);
+        const user = await oldUser.save();
+        console.log(user);
+        return res.send({
+          msg: 'Email verification has sent to your email',
+        });
+      }
+    } catch (err) {
+      console.log(err);
+      return res.status(500).send('Server error');
+    }
+  }
+);
+
+/**
+ * @route   PUT api/users/max-account/:id
+ * @desc    Update user info from id
+ * @access  Admin
+ */
+router.put('/max-account/:id', auth([Role.Admin]), async (req, res) => {
   try {
-    const oldUser = await User.findOne({ _id: req.user.id });
-    if (oldUser.email === req.body.email) {
-      oldUser.fullName = req.body.fullName;
-      const user = await oldUser.save();
-      return res.json(user);
+    const user = await User.findByIdAndUpdate(req.params.id, {
+      maxAccount: req.body.maxAccount,
+    });
+    if (user) {
+      res.json({ status: 'OK' });
     } else {
-      oldUser.fullName = req.body.fullName;
-      oldUser.email = req.body.email;
-      oldUser.emailVerified = false;
-      oldUser.emailVerifyToken = crypto.randomBytes(30).toString('hex');
-      oldUser.emailVerifyExpire = Date.now() + 3 * 60 * 1000;
-      const baseUrl = `https://copy-trading-platform-frontend-git-main-jordon-chens-projects.vercel.app`;
-      const content = `<div style="background-color: #f2f2f2; padding: 20px; border-radius: 10px;"><h1 style="font-size: 36px; color: #333; margin-bottom: 20px;">Hello</h1><p style="font-size: 18px; color: #666; margin-bottom: 20px;">Welcome To TradeCopierSignal Homepage</p><p style="font-size: 18px; color: #666; margin-bottom: 40px;">This is your email verification link. Please click the button below to verify your email:</p><a href="${baseUrl}/email-verify-update/${oldUser.emailVerifyToken}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 10px; font-size: 18px;">Verify Email</a></div>`;
-      sendMail(oldUser.email, content);
-      console.log(oldUser.email);
-      const user = await oldUser.save();
-      console.log(user);
-      return res.send({
-        msg: 'Email verification has sent to your email',
-      });
+      res.json({ status: 'EX', data: 'No user' });
     }
   } catch (err) {
     console.log(err);
-    return res.status(500).send('Server error');
+    res.json({ status: 'ERR' });
+  }
+});
+
+/**
+ * @route   PUT api/users/convert-provider/:id
+ * @desc    Update user role as provider
+ * @access  Admin
+ */
+router.put('/convert-provider/:id', auth([Role.Admin]), async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, {
+      role: req.body.role,
+      providerAccountLimit: req.body.providerAccountLimit,
+      isPending: false,
+    });
+    if (user) {
+      res.json({ status: 'OK' });
+    } else {
+      res.json({ status: 'EX', data: 'No user' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.json({ status: 'ERR' });
   }
 });
 
@@ -474,7 +512,7 @@ router.put('/me', auth([Role.User, Role.Admin]), async (req, res) => {
 // @access   Public
 router.put(
   '/update-password',
-  auth([Role.User, Role.Admin]),
+  auth([Role.User, Role.Provider, Role.Admin]),
   async (req, res) => {
     try {
       const { oldPassword, newPassword } = req.body;
@@ -521,20 +559,24 @@ router.delete('/:id', auth([Role.Admin]), async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.id);
     if (user) {
       const accounts = await Account.find({ user: user._id });
-      const accountIds = accounts.map(item => item.accountId);
+      const accountIds = accounts.map((item) => item.accountId);
 
-      const strategies = await Strategy.find({ strategyId: { $in: accountIds } });
-      const strategyIds = strategies.map(item => item.strategyId);
+      const strategies = await Strategy.find({
+        strategyId: { $in: accountIds },
+      });
+      const strategyIds = strategies.map((item) => item.strategyId);
       await Strategy.deleteMany({ accountId: { $in: accountIds } }); //delete strategies
       await Strategy.updateMany({ $pull: { proposers: user._id } }); //delete propsers in strategy
 
       await Subscriber.deleteMany({ subscriberId: { $in: accountIds } }); //delete subscribers
-      await Subscriber.updateMany({ $pull: { strategyIds: { $in: strategyIds } } });
+      await Subscriber.updateMany({
+        $pull: { strategyIds: { $in: strategyIds } },
+      });
     }
-    res.json({ status: "OK" });
+    res.json({ status: 'OK' });
   } catch (err) {
-    console.log(err)
-    res.json({ status: "ERR" })
+    console.log(err);
+    res.json({ status: 'ERR' });
   }
 });
 
