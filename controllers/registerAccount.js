@@ -32,19 +32,6 @@ module.exports = async function registerAccount(
     const transactionId = generateTransactionId();
     let url =
       'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts';
-    const data = JSON.stringify({
-      quoteStreamingIntervalInSeconds: 0.5,
-      region: 'new-york',
-      login: login,
-      password: password,
-      name: name,
-      server: server,
-      magic: 0,
-      copyFactoryRoles: copyFactoryRoles,
-      platform: platform,
-      resourceSlots: 2,
-      metastatsApiEnabled: true,
-    });
     let config = {
       headers: {
         'auth-token': token,
@@ -52,8 +39,22 @@ module.exports = async function registerAccount(
         'transaction-id': transactionId,
       },
     };
-    const res = await axios.post(url, data, config);
     if (user.role === 'User') {
+      console.log('user');
+      const data = JSON.stringify({
+        quoteStreamingIntervalInSeconds: 0.5,
+        region: 'new-york',
+        login: login,
+        password: password,
+        name: name,
+        server: server,
+        magic: 0,
+        copyFactoryRoles: ['SUBSCRIBER'],
+        platform: platform,
+        resourceSlots: 2,
+        metastatsApiEnabled: true,
+      });
+      const res = await axios.post(url, data, config);
       const newAccount = new Account({
         user: user.id,
         accountId: res.data.id,
@@ -75,6 +76,21 @@ module.exports = async function registerAccount(
     if (user.role === 'Provider') {
       const userData = await User.findById(user._id);
       if (userData.providerAccountLimit > 0) {
+        console.log('user');
+        const data = JSON.stringify({
+          quoteStreamingIntervalInSeconds: 0.5,
+          region: 'new-york',
+          login: login,
+          password: password,
+          name: name,
+          server: server,
+          magic: 0,
+          copyFactoryRoles: copyFactoryRoles,
+          platform: platform,
+          resourceSlots: 2,
+          metastatsApiEnabled: true,
+        });
+        const res = await axios.post(url, data, config);
         const newAccount = new Account({
           user: user.id,
           accountId: res.data.id,
